@@ -24,3 +24,5 @@ Keybind is defined in the xml file for Input Loader, `r6/input/ManualTriggerSwap
 -  Input Loader
 -  AchiveXL
 -  RED4ext
+
+Check Wiki for more details
