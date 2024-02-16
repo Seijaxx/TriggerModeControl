@@ -4,14 +4,14 @@ Framework for Cyberpunk2077, to enable specific weapons to swap firemodes at the
 All credits to rfuzzo, that showed everyone this could be done by writing the initial version.
 
 To make a weapon change firemode manually, instead of the automatic swap that the base game does when changing aiming state, add the `ManualTriggerSwap` tag to the record of the weapon in question:
-```
+```yaml
   tags:
-  - !append-once ManualTriggerSwap
+  - !append ManualTriggerSwap
 ```
 To tie the attack type to the relative (primary/secondary) trigger mode, rather than leave it to aiming state, add the `TriggerBoundAttacks` tag to the record of the weapon in question:
-```
+```yaml
   tags:
-  - !append-once TriggerBoundAttacks
+  - !append TriggerBoundAttacks
 ```
 
 As it's set up, this framework will ignore all weapons that don't have one of its enabling tags, so all weapons that aren't specifically brought into this system will be unaffected by this framework.
