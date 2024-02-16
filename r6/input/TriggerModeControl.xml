@@ -12,10 +12,10 @@
         <include name="TriggerModeCtrlContext" />
     </context>
 		
-	<acceptedEvents action="VisionHold" >
-		<event name="BUTTON_HOLD_COMPLETE" />
-		<event name="BUTTON_RELEASED" />
-	</acceptedEvents>
+    <acceptedEvents action="VisionHold" >
+        <event name="BUTTON_HOLD_COMPLETE" />
+        <event name="BUTTON_RELEASED" />
+    </acceptedEvents>
 	
     <!-- inputUserMapping -->
 	<mapping name="TriggerSwap_Button" type="Button" >
