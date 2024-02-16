@@ -65,11 +65,8 @@ private final func IsTriggerModeActive(const scriptInterface: ref<StateGameScrip
   return false;
 }
 
-// add input hints
-@wrapMethod(InputContextTransitionEvents)
-protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
-  wrappedMethod(stateContext, scriptInterface);
-  
+@addMethod(InputContextTransitionEvents)
+private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
     // SemiAuto
     if this.IsTriggerModeActive(scriptInterface, gamedataTriggerMode.SemiAuto) {
@@ -88,6 +85,27 @@ protected final const func ShowRangedInputHints(stateContext: ref<StateContext>,
       this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Charge"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
     };
   };
+}
+
+// add input hints
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
+}
+
+// add input hints
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDriverCombatInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
+}
+
+// add input hints
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
 }
 
 
@@ -148,8 +166,8 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
     let weaponCharge: Float;
     let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
     let weaponRecord: ref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
+	this.m_rangedAttackPackage = weaponObject.GetCurrentRangedAttack();
 	
-    this.m_rangedAttackPackage = weaponObject.GetCurrentRangedAttack();
     weaponObject.GetItemData().GetItemPart(magazine, t"AttachmentSlots.DamageMod");
     if this.m_magazineID != ItemID.GetTDBID(InnerItemData.GetItemID(magazine)) {
       this.m_magazineID = ItemID.GetTDBID(InnerItemData.GetItemID(magazine));
@@ -164,7 +182,7 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
     weaponCharge = WeaponObject.GetWeaponChargeNormalized(weaponObject);
     rangedAttack = weaponCharge >= 1.00 ? this.m_rangedAttackPackage.ChargeFire() : this.m_rangedAttackPackage.DefaultFire();
 	
-	if weaponObject.WeaponHasTag(n"TriggerBoundAttacks") {
+	if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
 	  if Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponRecord.SecondaryTriggerMode().Type()) {
 	    if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
 	      attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
@@ -200,6 +218,23 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
     return attackRecord;
 }
 
+// Preem Weaponsmith workaround
+@wrapMethod(WeaponTransition)
+protected final const func SwitchTriggerMode(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  
+  if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
+    let evt: ref<WeaponChangeTriggerModeEvent> = new WeaponChangeTriggerModeEvent();
+    let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+    let weaponRecord: ref<WeaponItem_Record> = weapon.GetWeaponRecord();
+    if this.IsPrimaryTriggerModeActive(scriptInterface) {
+      evt.triggerMode = weaponRecord.SecondaryTriggerMode().Type();
+    } else {
+      evt.triggerMode = weaponRecord.PrimaryTriggerMode().Type();
+    };
+    weapon.QueueEvent(evt);
+  };
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // WeaponObject
