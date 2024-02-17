@@ -52,7 +52,6 @@ protected final const func HandleWeaponUnequip(scriptInterface: ref<StateGameScr
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // InputContextTransitionEvents
 
-
 // helper method
 @addMethod(InputContextTransitionEvents)
 private final func IsTriggerModeActive(const scriptInterface: ref<StateGameScriptInterface>, triggerMode: gamedataTriggerMode) -> Bool {
@@ -159,63 +158,63 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
 // TriggerBoundAttacks
 @replaceMethod(WeaponTransition)
 protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> ref<Attack_Record> {
-    let attackRecord: ref<Attack_Record>;
-    let isAiming: Bool = stateContext.IsStateActive(n"UpperBody", n"aimingState");
-    let magazine: InnerItemData;
-    let rangedAttack: ref<RangedAttack_Record>;
-    let weaponCharge: Float;
-    let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-    let weaponRecord: ref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
-	this.m_rangedAttackPackage = weaponObject.GetCurrentRangedAttack();
-	
-    weaponObject.GetItemData().GetItemPart(magazine, t"AttachmentSlots.DamageMod");
-    if this.m_magazineID != ItemID.GetTDBID(InnerItemData.GetItemID(magazine)) {
-      this.m_magazineID = ItemID.GetTDBID(InnerItemData.GetItemID(magazine));
-      if TDBID.IsValid(this.m_magazineID) {
-        this.m_magazineAttack = TDBID.Create(TweakDBInterface.GetString(this.m_magazineID + t".overrideAttack", ""));
-        this.m_rangedAttackPackage = TweakDBInterface.GetRangedAttackPackageRecord(this.m_magazineAttack);
-      } else {
-        this.m_magazineAttack = t"NewPerks.Intelligence_Left_Milestone_2.preventInQueueAgain";
-      };
+  let attackRecord: ref<Attack_Record>;
+  let isAiming: Bool = stateContext.IsStateActive(n"UpperBody", n"aimingState");
+  let magazine: InnerItemData;
+  let rangedAttack: ref<RangedAttack_Record>;
+  let weaponCharge: Float;
+  let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  let weaponRecord: ref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
+  this.m_rangedAttackPackage = weaponObject.GetCurrentRangedAttack();
+
+  weaponObject.GetItemData().GetItemPart(magazine, t"AttachmentSlots.DamageMod");
+  if this.m_magazineID != ItemID.GetTDBID(InnerItemData.GetItemID(magazine)) {
+    this.m_magazineID = ItemID.GetTDBID(InnerItemData.GetItemID(magazine));
+    if TDBID.IsValid(this.m_magazineID) {
+      this.m_magazineAttack = TDBID.Create(TweakDBInterface.GetString(this.m_magazineID + t".overrideAttack", ""));
+      this.m_rangedAttackPackage = TweakDBInterface.GetRangedAttackPackageRecord(this.m_magazineAttack);
+    } else {
+      this.m_magazineAttack = t"NewPerks.Intelligence_Left_Milestone_2.preventInQueueAgain";
     };
+  };
+
+  weaponCharge = WeaponObject.GetWeaponChargeNormalized(weaponObject);
+  rangedAttack = weaponCharge >= 1.00 ? this.m_rangedAttackPackage.ChargeFire() : this.m_rangedAttackPackage.DefaultFire();
 	
-    weaponCharge = WeaponObject.GetWeaponChargeNormalized(weaponObject);
-    rangedAttack = weaponCharge >= 1.00 ? this.m_rangedAttackPackage.ChargeFire() : this.m_rangedAttackPackage.DefaultFire();
-	
-	if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
-	  if Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponRecord.SecondaryTriggerMode().Type()) {
-	    if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
-	      attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
-	    };
-	    if !IsDefined(attackRecord) {
-          attackRecord = rangedAttack.SecondaryPlayerAttack();
-        };
-	  }
-	  else {
-	    if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
-	      attackRecord = rangedAttack.PlayerTimeDilated();
-	    };
-	  };
+  if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
+    if Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponRecord.SecondaryTriggerMode().Type()) {
+      if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
+        attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
+      };
+      if !IsDefined(attackRecord) {
+        attackRecord = rangedAttack.SecondaryPlayerAttack();
+      };
     }
     else {
-	  if scriptInterface.GetTimeSystem().IsTimeDilationActive() && !Equals(weaponRecord.Evolution().Type(), gamedataWeaponEvolution.Tech) {
-        if isAiming {
-          attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
-        };
-        if !IsDefined(attackRecord) {
-          attackRecord = rangedAttack.PlayerTimeDilated();
-        };
-      } else {
-        if isAiming {
-          attackRecord = rangedAttack.SecondaryPlayerAttack();
-        };
+      if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
+        attackRecord = rangedAttack.PlayerTimeDilated();
       };
-	};
-	if !IsDefined(attackRecord) {
-	  attackRecord = rangedAttack.PlayerAttack();
-	};
-	
-    return attackRecord;
+    };
+  }
+  else {
+    if scriptInterface.GetTimeSystem().IsTimeDilationActive() && !Equals(weaponRecord.Evolution().Type(), gamedataWeaponEvolution.Tech) {
+      if isAiming {
+        attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
+      };
+      if !IsDefined(attackRecord) {
+        attackRecord = rangedAttack.PlayerTimeDilated();
+      };
+    } else {
+      if isAiming {
+        attackRecord = rangedAttack.SecondaryPlayerAttack();
+      };
+    };
+  };
+  if !IsDefined(attackRecord) {
+    attackRecord = rangedAttack.PlayerAttack();
+  };
+
+  return attackRecord;
 }
 
 // Preem Weaponsmith workaround
@@ -256,5 +255,5 @@ protected cb func OnGameAttached() -> Bool {
   if !this.m_triggerModeSet {
     this.m_triggerMode = this.m_weaponRecord.PrimaryTriggerMode().Type();
     this.m_triggerModeSet = true;
-  }
+  };
 }
