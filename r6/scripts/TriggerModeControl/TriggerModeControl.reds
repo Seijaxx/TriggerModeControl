@@ -222,7 +222,7 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
 protected final const func SwitchTriggerMode(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   
-  if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
+  if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 {
     let evt: ref<WeaponChangeTriggerModeEvent> = new WeaponChangeTriggerModeEvent();
     let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
     let weaponRecord: ref<WeaponItem_Record> = weapon.GetWeaponRecord();
