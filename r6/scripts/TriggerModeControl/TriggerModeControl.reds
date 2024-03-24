@@ -23,11 +23,15 @@ protected cb func OnDetach() -> Bool {
 // helper method
 @addMethod(EquipmentBaseTransition)
 private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScriptInterface>) -> Int32 {
-  let triggerModesArray: array<wref<TriggerMode_Record>>;
   let item: ref<ItemObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight");
   let itemID: ItemID = item.GetItemID();
   let weaponRecordData: ref<WeaponItem_Record> = TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(itemID));
   
+  if Equals(weaponRecordData.PrimaryTriggerMode().Type(), weaponRecordData.SecondaryTriggerMode().Type()) {
+   return 1;
+  };
+  
+  let triggerModesArray: array<wref<TriggerMode_Record>>;
   weaponRecordData.TriggerModes(triggerModesArray);
   return ArraySize(triggerModesArray);
 }
@@ -116,7 +120,7 @@ protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: re
 protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
     return scriptInterface.IsActionJustPressed(n"TriggerSwap");
-  }
+  };
   if stateContext.IsStateActive(n"UpperBody", n"aimingState") && this.IsPrimaryTriggerModeActive(scriptInterface) {
     return true;
   };
@@ -146,9 +150,9 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
   // refresh button hints
   PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);
   // set weapon trigger mode if is different from last time
-  if !Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponObject.m_triggerMode) { 
+  if !Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponObject.m_triggerMode) {
     this.SwitchTriggerMode(stateContext, scriptInterface);
-  }
+  };
 }
 
 
@@ -257,3 +261,4 @@ protected cb func OnGameAttached() -> Bool {
     this.m_triggerModeSet = true;
   };
 }
+
