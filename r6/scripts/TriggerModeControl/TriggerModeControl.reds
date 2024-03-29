@@ -23,16 +23,14 @@ protected cb func OnDetach() -> Bool {
 // helper method
 @addMethod(EquipmentBaseTransition)
 private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScriptInterface>) -> Int32 {
-  let item: ref<ItemObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight");
-  let itemID: ItemID = item.GetItemID();
-  let weaponRecordData: ref<WeaponItem_Record> = TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(itemID));
+  let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
   
-  if Equals(weaponRecordData.PrimaryTriggerMode().Type(), weaponRecordData.SecondaryTriggerMode().Type()) {
+  if !weaponObject.HasSecondaryTriggerMode() {
    return 1;
   };
   
   let triggerModesArray: array<wref<TriggerMode_Record>>;
-  weaponRecordData.TriggerModes(triggerModesArray);
+  weaponObject.GetWeaponRecord().TriggerModes(triggerModesArray);
   return ArraySize(triggerModesArray);
 }
 
@@ -40,9 +38,15 @@ private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScr
 @wrapMethod(EquipmentBaseTransition)
 protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID) -> Void {
   wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item);
-  if ((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.affectAll || (scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject).WeaponHasTag(n"ManualTriggerSwap"))
-	&& this.GetWeaponTriggerModesNumber(scriptInterface) > 1 {
-    stateContext.SetPermanentBoolParameter(n"isTriggerModeCtrlApplied", true, true);
+
+  let isTech: Bool = Equals(TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(item)).Evolution().Type(), gamedataWeaponEvolution.Tech);
+  
+  if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 {
+    if (((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideOthers && !isTech) || 
+		((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideTech && isTech) || 
+		(scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject).WeaponHasTag(n"ManualTriggerSwap")) {
+      stateContext.SetPermanentBoolParameter(n"isTriggerModeCtrlApplied", true, true);
+    };
   };
 }
 
@@ -261,4 +265,3 @@ protected cb func OnGameAttached() -> Bool {
     this.m_triggerModeSet = true;
   };
 }
-
