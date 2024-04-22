@@ -38,9 +38,7 @@ private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScr
 @wrapMethod(EquipmentBaseTransition)
 protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID) -> Void {
   wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item);
-
   let isTech: Bool = Equals(TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(item)).Evolution().Type(), gamedataWeaponEvolution.Tech);
-  
   if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 {
     if (((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideOthers && !isTech) || 
 		((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideTech && isTech) || 
@@ -154,7 +152,7 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
   // refresh button hints
   PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);
   // set weapon trigger mode if is different from last time
-  if !Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponObject.m_triggerMode) {
+  if weaponObject.HasSecondaryTriggerMode() && !Equals(weaponObject.GetCurrentTriggerMode().Type(), weaponObject.m_triggerMode) {
     this.SwitchTriggerMode(stateContext, scriptInterface);
   };
 }
@@ -228,8 +226,7 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
 // Preem Weaponsmith workaround
 @wrapMethod(WeaponTransition)
 protected final const func SwitchTriggerMode(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Void {
-  wrappedMethod(stateContext, scriptInterface);
-  
+  wrappedMethod(stateContext, scriptInterface);  
   if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 {
     let evt: ref<WeaponChangeTriggerModeEvent> = new WeaponChangeTriggerModeEvent();
     let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
@@ -259,7 +256,6 @@ protected cb func OnWeaponChangeTriggerMode(evt: ref<WeaponChangeTriggerModeEven
 @wrapMethod(WeaponObject)
 protected cb func OnGameAttached() -> Bool {
   wrappedMethod();
-
   if !this.m_triggerModeSet {
     this.m_triggerMode = this.m_weaponRecord.PrimaryTriggerMode().Type();
     this.m_triggerModeSet = true;
