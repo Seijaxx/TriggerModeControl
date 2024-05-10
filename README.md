@@ -11,6 +11,7 @@ To make a weapon change firemode manually, instead of the automatic swap that th
 To tie the attack type to the relative (primary/secondary) trigger mode, rather than leave it to aiming state, add the `TriggerBoundAttacks` tag to the record of the weapon in question:
 ```yaml
   tags:
+  - !append ManualTriggerSwap
   - !append TriggerBoundAttacks
 ```
 
@@ -25,4 +26,4 @@ Keybind is defined in the xml file for Input Loader, `r6/input/ManualTriggerSwap
 -  AchiveXL
 -  RED4ext
 
-Check Wiki for more details
+Check [Wiki](https://github.com/Seijaxx/TriggerModeControl/wiki) for more details
