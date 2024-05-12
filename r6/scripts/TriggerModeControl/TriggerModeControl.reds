@@ -57,7 +57,7 @@ protected final const func HandleWeaponUnequip(scriptInterface: ref<StateGameScr
 // InputContextTransitionEvents
 
 @addMethod(InputContextTransitionEvents)
-private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
   if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
     let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
     let weaponRecord: wref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
@@ -66,28 +66,28 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
         return;
       };
       if !stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
         return;
       };
       if stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
         return;
       };
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.SemiAuto) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-SemiAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-SemiAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
       return;
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Burst) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Burst"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Burst"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
       return;
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
       return;
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Charge) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", n"Ranged", GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Charge"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Charge"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
     };
   };
 }
@@ -96,21 +96,21 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
-  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
 }
 
-// add input hints
+// Vehicle Combat: add input hints
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
-  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombat");
 }
 
-// add input hints
+// Vehicle Combat: add input hints
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
-  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombatTPP");
 }
 
 
