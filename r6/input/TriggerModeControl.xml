@@ -11,14 +11,14 @@
     <context name="BaseVehicleDriverCombat" append="true">
         <include name="TriggerModeCtrlContext" />
     </context>
-		
+
     <acceptedEvents action="VisionHold" >
         <event name="BUTTON_HOLD_COMPLETE" />
         <event name="BUTTON_RELEASED" />
     </acceptedEvents>
-	
+
     <!-- inputUserMapping -->
-	<mapping name="TriggerSwap_Button" type="Button" >
+    <mapping name="TriggerSwap_Button" type="Button" >
         <button id="IK_Tab" />
         <button id="IK_Pad_LeftShoulder" />
     </mapping>

@@ -1,0 +1,25 @@
+BaseStats.IsSecondaryFireMode:
+    $base: BaseStats.StatFlag
+    enumName: IsSecondaryFireMode
+    enumComment: "If true, player is using the secondary fire of the current gun"
+
+BaseStats.IsSecondaryDependantStatModifier:
+    $type: CombinedStatModifier
+    refObject: Player
+    refStat: BaseStats.IsSecondaryFireMode
+    opSymbol: "*"
+    modifierType: Additive
+    value: 1.0
+
+BaseStatusEffect.PlayerSecondaryTrigger:
+    $base: BaseStatusEffect.PlayerAiming
+    packages:
+    -   $type: GameplayLogicPackage
+        stats:
+        -   $type: ConstantStatModifier
+            statType: BaseStats.IsSecondaryFireMode
+            modifierType: Additive
+            value: 1.0
+#    uiData:
+#        displayName: Armor increased
+#        iconPath: armor_boost

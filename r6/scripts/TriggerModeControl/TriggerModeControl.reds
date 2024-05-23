@@ -12,13 +12,13 @@ protected cb func OnGameAttached() -> Bool {
 
 @wrapMethod(PlayerPuppet)
 protected cb func OnDetach() -> Bool {
-  wrappedMethod();
   this.manualTriggerSwap = null;
+  wrappedMethod();
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// EquipmentBaseTransition
+// EquipmentBaseTransition, UnequipCycleEvents
 
 // helper method
 @addMethod(EquipmentBaseTransition)
@@ -36,20 +36,24 @@ private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScr
 @wrapMethod(EquipmentBaseTransition)
 protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID) -> Void {
   wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item);
+  let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
   let isTech: Bool = Equals(TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(item)).Evolution().Type(), gamedataWeaponEvolution.Tech);
-  if (scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject).WeaponHasTag(n"ManualTriggerSwap") || 
+  if weaponObject.WeaponHasTag(n"ManualTriggerSwap") || 
    (this.GetWeaponTriggerModesNumber(scriptInterface) > 1 &&
    (((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideOthers && !isTech) || ((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideTech && isTech))) {
     stateContext.SetPermanentBoolParameter(n"isTriggerModeCtrlApplied", true, true);
+  };
+  if IsDefined(weaponObject.GetWeaponRecord().SecondaryTriggerMode()) {
     stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", false, true);
   };
 }
 
-@wrapMethod(EquipmentBaseTransition)
-protected final const func HandleWeaponUnequip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID) -> Void {
+@wrapMethod(UnequipCycleEvents)
+  protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   stateContext.RemovePermanentBoolParameter(n"isTriggerModeCtrlApplied");
   stateContext.RemovePermanentBoolParameter(n"isSecondaryAttackMode");
-  wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item);
+  StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+  wrappedMethod(stateContext, scriptInterface);
 }
 
 
@@ -146,16 +150,19 @@ protected final func OnAttach(const stateContext: ref<StateContext>, const scrip
 @wrapMethod(CycleTriggerModeEvents)
 protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
+  let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  if IsDefined(weaponObject.GetWeaponRecord().SecondaryTriggerMode()) {
+    if stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
+	  stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", false, true);
+      StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+	} else {
+	  stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", true, true);
+      StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+	};
+  };
   if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
-    switch stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-      case false: stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", true, true); break;
-      case true: stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", false, true); break;
-    };
-    let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-    if weaponObject.HasSecondaryTriggerMode()  {
-      this.SwitchTriggerMode(stateContext, scriptInterface);
-    };
     if weaponObject.HasSecondaryTriggerMode() || weaponObject.WeaponHasTag(n"TriggerBoundAttacks") {
+      this.SwitchTriggerMode(stateContext, scriptInterface);
       PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);               // refresh button hints
       GameObject.PlaySoundEvent(scriptInterface.executionOwner, n"w_gun_pistol_power_unity_trigger");                                // play sound
     };
