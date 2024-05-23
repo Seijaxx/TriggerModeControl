@@ -22,8 +22,9 @@ Keybind is defined in the xml file for Input Loader, `r6/input/ManualTriggerSwap
 
 **Requirements:**
 -  redscript
+-  RED4ext
 -  Input Loader
 -  AchiveXL
--  RED4ext
+-  TweakXL
 
 Check [Wiki](https://github.com/Seijaxx/TriggerModeControl/wiki) for more details
