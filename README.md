@@ -23,9 +23,17 @@ tags:
 ```
 
 As it's set up, this framework will ignore all weapons that don't have one of its enabling tags, so all weapons that aren't specifically brought into this system will be unaffected by this framework.
-
 Keybind is defined in the xml file for Input Loader, `r6/input/ManualTriggerSwap.xml`
 
+To give any weapon any stat and make it apply only to its secondary firemode (regardless of if it's triggered manually or automatically on aim) use `$base: BaseStats.IsSecondaryDependantStatModifier` instead of `$type: ConstantStatModifier`
+For example:
+```yaml
+  - $base: BaseStats.IsSecondaryDependantStatModifier
+    statType: BaseStats.CycleTimeBonus
+    modifierType: Additive
+    value: 2.0
+```
+will result in slower firerate only while using its secondary firemode.
 
 **Requirements:**
 -  redscript
