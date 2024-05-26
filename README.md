@@ -6,19 +6,20 @@ All credits to rfuzzo, that showed everyone this could be done by writing the in
 To make a weapon change firemode manually, instead of the automatic swap that the base game does when changing aiming state, add the `ManualTriggerSwap` tag to the record of the weapon in question:
 ```yaml
   tags:
-  - !append ManualTriggerSwap
+    - !append ManualTriggerSwap
 ```
 To tie the attack type to aiming state, rather than manually selectable trigger mode, add the `AimingBoundAttacks` tag to the record of the weapon in question:
 ```yaml
   tags:
-  - !append ManualTriggerSwap
-  - !append AimingBoundAttacks
+    - !append ManualTriggerSwap
+    - !append AimingBoundAttacks
 ```
 To make your firemode keep firing as long as trigger is held (regardless of it actually being TriggerMode.FullAuto) add the `ForceAutoPrimary` and/or `ForceAutoSecondary` tag to the record of the weapon in question:
 tags:
 ```yaml
-- !append ForceAutoPrimary
-- !append ForceAutoSecondary
+  tags:
+    - !append ForceAutoPrimary
+    - !append ForceAutoSecondary
 ```
 
 As it's set up, this framework will ignore all weapons that don't have one of its enabling tags, so all weapons that aren't specifically brought into this system will be unaffected by this framework.
