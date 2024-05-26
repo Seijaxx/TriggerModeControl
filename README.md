@@ -29,6 +29,7 @@ Keybind is defined in the xml file for Input Loader, `r6/input/ManualTriggerSwap
 ---
 
 To give any weapon any stat, and make it apply only to its secondary firemode (regardless of if it's triggered manually or automatically on aim), use `$base: BaseStats.IsSecondaryDependantStatModifier` instead of `$type: ConstantStatModifier`
+
 For example:
 ```yaml
   - $base: BaseStats.IsSecondaryDependantStatModifier
