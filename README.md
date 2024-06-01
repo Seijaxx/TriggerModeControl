@@ -43,6 +43,7 @@ will result in slower firerate only while using its secondary firemode.
 
 **Requirements:**
 -  redscript
+-  Codeware
 -  RED4ext
 -  Input Loader
 -  AchiveXL
