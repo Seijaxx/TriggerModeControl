@@ -13,14 +13,14 @@ class FillMissingGunSounds extends ScriptableService {
       };
       let audioPlayerSet = audioData as audioPlayerWeaponSettings;
       if IsDefined(audioPlayerSet) && !Equals(audioPlayerSet.name, n"") {
-	    if Equals(audioPlayerSet.chargeStartSound, n"") {
+        if Equals(audioPlayerSet.chargeStartSound, n"") {
           audioPlayerSet.chargeStartSound = n"w_gun_revol_tech_burya_charge";
-		};
-		if !Equals(audioPlayerSet.fireSound, n"") {
+        };
+        if !Equals(audioPlayerSet.fireSound, n"") {
           audioPlayerSet.preFireSound = audioPlayerSet.fireSound;
           audioPlayerSet.fireSound = n"";
           audioPlayerSet.burstFireSound = n"";
-		};
+        };
       };
     };
   }
