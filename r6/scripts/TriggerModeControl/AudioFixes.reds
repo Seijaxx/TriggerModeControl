@@ -12,15 +12,18 @@ class FillMissingGunSounds extends ScriptableService {
         audioWeaponSet.playerSilenced = n"wea_pla_yukimura";
       };
       let audioPlayerSet = audioData as audioPlayerWeaponSettings;
-      if IsDefined(audioPlayerSet) && !Equals(audioPlayerSet.name, n"") {
+      if IsDefined(audioPlayerSet) && StrContains(NameToString(audioPlayerSet.name), "wea_pla_") {
         if Equals(audioPlayerSet.chargeStartSound, n"") {
           audioPlayerSet.chargeStartSound = n"w_gun_revol_tech_burya_charge";
         };
-        if !Equals(audioPlayerSet.fireSound, n"") {
-          audioPlayerSet.preFireSound = audioPlayerSet.fireSound;
-          audioPlayerSet.fireSound = n"";
+        if !Equals(audioPlayerSet.name, n"wea_pla_missile_vehicle") && !Equals(audioPlayerSet.name, n"wea_pla_vehicle") {
+          if !Equals(audioPlayerSet.fireSound, n"") {
+            audioPlayerSet.preFireSound = audioPlayerSet.fireSound;
+            audioPlayerSet.fireSound = n"";
+          };
           audioPlayerSet.burstFireSound = n"";
-        };
+          audioPlayerSet.autoFireSound = n"";
+		};
       };
     };
   }
