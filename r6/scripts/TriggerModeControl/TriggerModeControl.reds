@@ -50,10 +50,13 @@ protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScrip
 
 @wrapMethod(UnequipCycleEvents)
 protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
-  stateContext.RemovePermanentBoolParameter(n"isTriggerModeCtrlApplied");
-  stateContext.RemovePermanentBoolParameter(n"isTriggerModeCtrlOverride");
-  stateContext.RemovePermanentBoolParameter(n"isSecondaryAttackMode");
-  StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+  let item: ItemID = this.GetItemIDFromParam(this.stateMachineInstanceData, stateContext);
+  if this.IsRightHandLogic(this.stateMachineInstanceData) && Equals(this.GetItemCategoryFromItemID(item), gamedataItemCategory.Weapon) {
+    stateContext.RemovePermanentBoolParameter(n"isTriggerModeCtrlApplied");
+    stateContext.RemovePermanentBoolParameter(n"isTriggerModeCtrlOverride");
+    stateContext.RemovePermanentBoolParameter(n"isSecondaryAttackMode");
+    StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+  };
   wrappedMethod(stateContext, scriptInterface);
 }
 
