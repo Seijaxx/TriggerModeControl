@@ -200,6 +200,30 @@ protected final func OnUpdate(timeDelta: Float, stateContext: ref<StateContext>,
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // WeaponTransition
 
+// grab correct stats
+@replaceMethod(WeaponTransition)
+protected final const func IsPrimaryTriggerModeActive(const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  let weaponRecord: ref<WeaponItem_Record> = weapon.GetWeaponRecord();
+  if !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger") {
+    return true;
+  };
+  return false;
+}
+
+@replaceMethod(WeaponTransition)
+  protected final func SetupStandardShootingSequence(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+    let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+    let statsSystem: ref<StatsSystem> = scriptInterface.GetStatsSystem();
+    let burstCycleTimeStat: gamedataStatType = gamedataStatType.CycleTime_Burst;
+    let burstNumShots: gamedataStatType = gamedataStatType.NumShotsInBurst;
+    if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 && !this.IsPrimaryTriggerModeActive(scriptInterface) {
+      burstCycleTimeStat = gamedataStatType.CycleTime_BurstSecondary;
+      burstNumShots = gamedataStatType.NumShotsInBurstSecondary;
+    };
+    this.StartShootingSequence(stateContext, scriptInterface, statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.PreFireTime), statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstCycleTimeStat), Cast<Int32>(statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstNumShots)), false);
+  }
+
 // select correct attack
 @replaceMethod(WeaponTransition)
 protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> ref<Attack_Record> {
@@ -270,3 +294,4 @@ protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptIn
   };
   return result;
 }
+
