@@ -88,26 +88,26 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Charge) {
       this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Charge"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-	  return;
+      return;
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Burst) {
       this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Burst"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
       return;
     };
     if ((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideAuto || weaponObject.WeaponHasTag(n"ForceAutoPrimary")) && !stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-	  if Equals(weaponRecord.SecondaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
-	    this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-	  } else {
-	    this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-	  };
+      if Equals(weaponRecord.SecondaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      } else {
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      };
       return;
     };
     if ((scriptInterface.executionOwner as PlayerPuppet).manualTriggerSwap.overrideAuto || weaponObject.WeaponHasTag(n"ForceAutoSecondary")) && stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-	  if Equals(weaponRecord.PrimaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
-	    this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-	  } else {
-	    this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-	  };
+      if Equals(weaponRecord.PrimaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      } else {
+        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+      };
       return;
     };
     if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.SemiAuto) {
@@ -175,12 +175,12 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
   let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
   if IsDefined(weaponObject.GetWeaponRecord().SecondaryTriggerMode()) {
     if stateContext.GetBoolParameter(n"isSecondaryAttackMode", true) {
-	  stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", false, true);
+      stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", false, true);
       StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
-	} else {
-	  stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", true, true);
+    } else {
+      stateContext.SetPermanentBoolParameter(n"isSecondaryAttackMode", true, true);
       StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
-	};
+    };
   };
   if weaponObject.HasSecondaryTriggerMode() || stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
     this.SwitchTriggerMode(stateContext, scriptInterface);
@@ -295,3 +295,76 @@ protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptIn
   return result;
 }
 
+
+// "NoAutomaticReload" tag
+@wrapMethod(NoAmmoDecisions)
+protected final const func ToReload(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let result: Bool = wrappedMethod(stateContext, scriptInterface);
+  if this.GetWeaponObject(scriptInterface).WeaponHasTag(n"NoAutomaticReload") {
+    if !scriptInterface.IsActionJustPressed(n"RangedAttack") && !scriptInterface.IsActionJustPressed(n"Reload") {
+      return false;
+    };
+  };
+  return result;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Extra
+
+// "ConstantAttackPackage" tag
+@replaceMethod(OverrideRangedAttackPackageEffector)
+protected func ActionOn(owner: ref<GameObject>) -> Void {
+  let targetObject: wref<GameObject>;
+  let targetWeapon: ref<WeaponObject>;
+  if !this.GetApplicationTarget(owner, n"Weapon", targetObject) {
+    return;
+  };
+  targetWeapon = targetObject as WeaponObject;
+  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ConstantAttackPackage") {
+    targetWeapon.OverrideRangedAttackPackage(this.m_attackPackage);
+  };
+}
+
+@replaceMethod(OverrideRangedAttackPackageEffector)
+protected func ActionOff(owner: ref<GameObject>) -> Void {
+  let targetObject: wref<GameObject>;
+  let targetWeapon: ref<WeaponObject>;
+  if !this.GetApplicationTarget(owner, n"Weapon", targetObject) {
+    return;
+  };
+  targetWeapon = targetObject as WeaponObject;
+  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ConstantAttackPackage") {
+    targetWeapon.DefaultRangedAttackPackage();
+  };
+}
+
+// Internal Clock Rework compatibility
+@wrapMethod(PerfectDischargePrereqState)
+public func StatPoolUpdate(oldValue: Float, newValue: Float) -> Void {
+    let weaponObject: wref<WeaponObject> = ScriptedPuppet.GetActiveWeapon(this.m_owner);
+    let itemID: ItemID = weaponObject.GetItemID();
+    let game: GameInstance = weaponObject.GetGame();
+    let player: wref<GameObject> = GameInstance.GetPlayerSystem(game).GetLocalPlayerControlledGameObject();
+    
+    if IsDefined(player) && ItemID.IsValid(itemID) {
+      let tags: array<CName> = TweakDBInterface.GetItemRecord(ItemID.GetTDBID(itemID)).Tags();
+      let i = 0;
+      if StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger") {
+        while i < ArraySize(tags) {
+          if Equals(tags[i], n"ForceAutoSecondary") {
+            return;
+          };
+          i += 1;
+        };
+      } else {
+        while i < ArraySize(tags) {
+          if Equals(tags[i], n"ForceAutoPrimary") {
+            return;
+          };
+          i += 1;
+        };
+      };
+    };
+  wrappedMethod(oldValue, newValue);
+}
