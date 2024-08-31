@@ -168,7 +168,6 @@ protected final func OnAttach(const stateContext: ref<StateContext>, const scrip
   this.EnableOnEnterCondition(weaponObject.HasSecondaryTriggerMode());
 }
 
-// refresh button hints
 @wrapMethod(CycleTriggerModeEvents)
 protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
@@ -273,7 +272,7 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
   return attackRecord;
 }
 
-// force automatic fire
+// ForceAuto
 @wrapMethod(WeaponTransition)
 protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
@@ -295,8 +294,18 @@ protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptIn
   return result;
 }
 
+// RemoveAuto
+@wrapMethod(WeaponTransition)
+protected final const func IsFullAutoAction(weaponObject: ref<WeaponObject>, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let result: Bool = wrappedMethod(weaponObject, stateContext, scriptInterface);
+  if (weaponObject.WeaponHasTag(n"RemoveAutoPrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+  || (weaponObject.WeaponHasTag(n"RemoveAutoSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+    return scriptInterface.IsActionJustPressed(n"RangedAttack");
+  };
+  return result;
+}
 
-// "NoAutomaticReload" tag
+// NoAutomaticReload
 @wrapMethod(NoAmmoDecisions)
 protected final const func ToReload(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let result: Bool = wrappedMethod(stateContext, scriptInterface);
@@ -312,7 +321,7 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Extra
 
-// "ConstantAttackPackage" tag
+// ProtectedAttackPackage
 @replaceMethod(OverrideRangedAttackPackageEffector)
 protected func ActionOn(owner: ref<GameObject>) -> Void {
   let targetObject: wref<GameObject>;
@@ -321,7 +330,7 @@ protected func ActionOn(owner: ref<GameObject>) -> Void {
     return;
   };
   targetWeapon = targetObject as WeaponObject;
-  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ConstantAttackPackage") {
+  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ProtectedAttackPackage") {
     targetWeapon.OverrideRangedAttackPackage(this.m_attackPackage);
   };
 }
@@ -334,7 +343,7 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
     return;
   };
   targetWeapon = targetObject as WeaponObject;
-  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ConstantAttackPackage") {
+  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ProtectedAttackPackage") {
     targetWeapon.DefaultRangedAttackPackage();
   };
 }
