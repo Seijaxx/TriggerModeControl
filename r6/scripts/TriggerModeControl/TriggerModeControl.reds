@@ -317,6 +317,40 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
   return result;
 }
 
+// PartialChargeDecay
+@replaceMethod(ChargeDecisions)
+protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let lastShotTime: Float;
+  let weapon: ref<WeaponObject>;
+  let actionPressCount: Uint32 = scriptInterface.GetActionPressCount(n"RangedAttack");
+  let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(n"LastChargePressCount");
+  if lastChargePressCount.valid && lastChargePressCount.value == Cast<Int32>(actionPressCount) {
+    if !this.CanHoldToShoot(scriptInterface) {
+      this.EnableOnEnterCondition(false);
+      return false;
+    };
+    lastShotTime = stateContext.GetFloatParameter(n"LastShotTime", true);
+    if EngineTime.ToFloat(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00 {
+      return false;
+    };
+  };
+  weapon = this.GetWeaponObject(scriptInterface);
+  let uncharged: Bool = scriptInterface.GetStatPoolsSystem().GetStatPoolValue(Cast<StatsObjectID>(weapon.GetEntityID()), gamedataStatPoolType.WeaponCharge) <= this.GetWeaponChargeMinValue(scriptInterface) || weapon.WeaponHasTag(n"PartialChargeDecay");
+  return !weapon.IsMagazineEmpty() && uncharged;
+}
+
+//ForceInstantDischarge 
+@wrapMethod(ShootEvents)
+protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  let statPoolsSystem: ref<StatPoolsSystem> = scriptInterface.GetStatPoolsSystem();
+  let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  if (weaponObject.WeaponHasTag(n"ForceInstantDischarge") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+  || (weaponObject.WeaponHasTag(n"ForceInstantDischargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+    statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
+  };
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Extra
