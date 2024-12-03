@@ -41,4 +41,5 @@ public class TMCSettings extends ScriptableSystem {
   private func OnDetach() -> Void {
     ModSettings.UnregisterListenerToClass(this);
   }
+  
 }
