@@ -11,6 +11,9 @@ BaseStats.IsSecondaryDependantStatModifier:
     modifierType: Additive
     value: 1.0
 
+BaseStats.SecondaryDependantStatModifier:
+    $base: BaseStats.IsSecondaryDependantStatModifier
+
 BaseStatusEffect.PlayerSecondaryTrigger:
     $base: BaseStatusEffect.PlayerAiming
     packages:
@@ -20,9 +23,29 @@ BaseStatusEffect.PlayerSecondaryTrigger:
             statType: BaseStats.IsSecondaryFireMode
             modifierType: Additive
             value: 1.0
+    gameplayTags:
+    -   !append SecondaryTrigger
 #    uiData:
 #        displayName: Armor increased
 #        iconPath: armor_boost
+
+Prereqs.IsPrimaryTrigger:
+    $type: StatusEffectPrereq
+    statusEffect: BaseStatusEffect.PlayerSecondaryTrigger
+    objectToCheck: Player
+    invert: true
+
+Prereqs.IsSecondaryTrigger:
+    $type: StatusEffectPrereq
+    statusEffect: BaseStatusEffect.PlayerSecondaryTrigger
+    objectToCheck: Player
+
+
+
+
+
+
+## Un-silenced Silencers
 
 Items.w_silencer_01_${rarity}_BaseAudio:
     $instances:
