@@ -1,3 +1,5 @@
+module TriggerModeControl.AudioFixes
+
 class FillMissingGunSounds extends ScriptableService {
 
   private cb func OnLoad() {
