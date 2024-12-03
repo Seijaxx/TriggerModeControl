@@ -25,7 +25,7 @@ class FillMissingGunSounds extends ScriptableService {
           };
           audioPlayerSet.burstFireSound = n"";
           audioPlayerSet.autoFireSound = n"";
-		};
+        };
       };
     };
   }
