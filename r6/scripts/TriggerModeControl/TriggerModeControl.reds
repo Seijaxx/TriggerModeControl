@@ -54,7 +54,7 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
   if stateContext.GetBoolParameter(n"isTriggerModeCtrlApplied", true) {
     let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
     let weaponRecord: wref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
-	let settings: wref<TMCSettings> = TMCSettings.GetSettings();
+    let settings: wref<TMCSettings> = TMCSettings.GetSettings();
     if Equals(weaponRecord.PrimaryTriggerMode(), weaponRecord.SecondaryTriggerMode()) {
       if weaponObject.WeaponHasTag(n"AimingBoundAttacks") {
         return;
