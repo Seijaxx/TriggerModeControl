@@ -1,3 +1,5 @@
+module TriggerModeControl.AudioFixes
+
 class FillMissingGunSounds extends ScriptableService {
 
   private cb func OnLoad() {
@@ -23,7 +25,7 @@ class FillMissingGunSounds extends ScriptableService {
           };
           audioPlayerSet.burstFireSound = n"";
           audioPlayerSet.autoFireSound = n"";
-		};
+        };
       };
     };
   }
