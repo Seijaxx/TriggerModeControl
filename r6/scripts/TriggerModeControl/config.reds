@@ -29,7 +29,7 @@ public class TMCSettings extends ScriptableSystem {
   
   
   public static func GetSettings() -> ref<TMCSettings> {
-	return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"TriggerModeControl.Config.TMCSettings") as TMCSettings;
+    return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"TriggerModeControl.Config.TMCSettings") as TMCSettings;
   }
 
   @if(ModuleExists("ModSettingsModule"))
