@@ -172,6 +172,12 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
     PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);               // refresh button hints
     GameObject.PlaySoundEvent(scriptInterface.executionOwner, n"w_gun_pistol_power_unity_trigger");                                // play sound
   };
+  if weaponObject.WeaponHasTag(n"ResetChargeOnSwap") {
+    let statPoolsSystem: ref<StatPoolsSystem> = scriptInterface.GetStatPoolsSystem();
+    if statPoolsSystem.HasActiveStatPool(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge) {
+      statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, 0.0, scriptInterface.executionOwner);
+    };
+  };
 }
 
 // refresh button hints
@@ -304,11 +310,10 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
   return result;
 }
 
-// PartialChargeDecay
+// PartialChargeFire
 @replaceMethod(ChargeDecisions)
 protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let lastShotTime: Float;
-  let weapon: ref<WeaponObject>;
   let actionPressCount: Uint32 = scriptInterface.GetActionPressCount(n"RangedAttack");
   let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(n"LastChargePressCount");
   if lastChargePressCount.valid && lastChargePressCount.value == Cast<Int32>(actionPressCount) {
@@ -321,20 +326,26 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
       return false;
     };
   };
-  weapon = this.GetWeaponObject(scriptInterface);
-  let uncharged: Bool = scriptInterface.GetStatPoolsSystem().GetStatPoolValue(Cast<StatsObjectID>(weapon.GetEntityID()), gamedataStatPoolType.WeaponCharge) <= this.GetWeaponChargeMinValue(scriptInterface) || weapon.WeaponHasTag(n"PartialChargeDecay");
+  let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  let uncharged: Bool = scriptInterface.GetStatPoolsSystem().GetStatPoolValue(Cast<StatsObjectID>(weapon.GetEntityID()), gamedataStatPoolType.WeaponCharge) <= this.GetWeaponChargeMinValue(scriptInterface) || weapon.WeaponHasTag(n"PartialChargeFire");
   return !weapon.IsMagazineEmpty() && uncharged;
 }
 
-// ForceInstantDischarge 
-@wrapMethod(ShootEvents)
+// ForceInstantDischarge & GradualChargeDecay
+@replaceMethod(ShootEvents)
 protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
-  wrappedMethod(stateContext, scriptInterface);
   let statPoolsSystem: ref<StatPoolsSystem> = scriptInterface.GetStatPoolsSystem();
+  let statsSystem: ref<StatsSystem> = scriptInterface.GetStatsSystem();
   let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-  if (weaponObject.WeaponHasTag(n"ForceInstantDischarge") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-  || (weaponObject.WeaponHasTag(n"ForceInstantDischargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
-    statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
+  if Equals(statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.FullAutoOnFullCharge), 0.00) {
+    if !weaponObject.WeaponHasTag(n"GradualChargeDecay") {
+      statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
+    };
+  } else {
+    if (weaponObject.WeaponHasTag(n"ForceInstantDischargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+    || (weaponObject.WeaponHasTag(n"ForceInstantDischargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+      statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
+    };
   };
 }
 
@@ -370,31 +381,19 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
 }
 
 // Internal Clock Rework compatibility
-@wrapMethod(PerfectDischargePrereqState)
-public func StatPoolUpdate(oldValue: Float, newValue: Float) -> Void {
-    let weaponObject: wref<WeaponObject> = ScriptedPuppet.GetActiveWeapon(this.m_owner);
-    let itemID: ItemID = weaponObject.GetItemID();
-    let game: GameInstance = weaponObject.GetGame();
+@wrapMethod(PerfectDischargePrereq)
+protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
+  let result: Bool = wrappedMethod(game, weaponObject, state);
+  if result {
     let player: wref<GameObject> = GameInstance.GetPlayerSystem(game).GetLocalPlayerControlledGameObject();
-    
-    if IsDefined(player) && ItemID.IsValid(itemID) {
-      let tags: array<CName> = TweakDBInterface.GetItemRecord(ItemID.GetTDBID(itemID)).Tags();
-      let i = 0;
-      if StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger") {
-        while i < ArraySize(tags) {
-          if Equals(tags[i], n"ForceAutoSecondary") {
-            return;
-          };
-          i += 1;
-        };
-      } else {
-        while i < ArraySize(tags) {
-          if Equals(tags[i], n"ForceAutoPrimary") {
-            return;
-          };
-          i += 1;
-        };
+    if IsDefined(player) {
+      if (weaponObject.WeaponHasTag(n"ForceAutoPrimary") && !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+      || (weaponObject.WeaponHasTag(n"ForceAutoSecondary") && StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+        return false;
       };
     };
-  wrappedMethod(oldValue, newValue);
+  };
+  return result;
 }
+
+
