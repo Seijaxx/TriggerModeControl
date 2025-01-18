@@ -10,8 +10,13 @@ class FillMissingGunSounds extends ScriptableService {
     let cookedMetadata = event.GetResource() as audioCookedMetadataResource;
     for audioData in cookedMetadata.entries {
       let audioWeaponSet = audioData as audioWeaponSettingsGroup;
-      if IsDefined(audioWeaponSet) && !Equals(audioWeaponSet.playerSettings, n"") && Equals(audioWeaponSet.playerSilenced, n"") {
-        audioWeaponSet.playerSilenced = n"wea_pla_yukimura";
+      if IsDefined(audioWeaponSet) {
+        if !Equals(audioWeaponSet.playerSettings, n"") && Equals(audioWeaponSet.playerSilenced, n"") {
+          audioWeaponSet.playerSilenced = n"wea_pla_yukimura";
+        };
+        if Equals(audioWeaponSet.playerSettings, n"wea_pla_grad_suppressor") {
+          audioWeaponSet.playerSilenced = n"wea_pla_grad_suppressor";
+        };
       };
       let audioPlayerSet = audioData as audioPlayerWeaponSettings;
       if IsDefined(audioPlayerSet) && StrContains(NameToString(audioPlayerSet.name), "wea_pla_") {
