@@ -349,7 +349,7 @@ protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: re
   };
 }
 
-//UnslowableCharge
+// UnslowableCharge
 @wrapMethod(ChargeEvents)
 protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptInterface>) -> Float {
   let chargeTime: Float = wrappedMethod(scriptInterface);
