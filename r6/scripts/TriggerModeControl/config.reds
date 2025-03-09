@@ -26,6 +26,11 @@ public class TMCSettings extends ScriptableSystem {
   @runtimeProperty("ModSettings.description", "Mod-TriggerModeCtrl-OverrideHoldCharge_desc")
   let overrideHoldCharge : Bool = false;
   
+  @runtimeProperty("ModSettings.mod", "Trigger Control")
+  @runtimeProperty("ModSettings.displayName", "Mod-TriggerModeCtrl-OverrideChargeSpeed")
+  @runtimeProperty("ModSettings.description", "Mod-TriggerModeCtrl-OverrideChargeSpeed_desc")
+  let overrideChargeSpeed : Bool = false;
+  
   
   
   public static func GetSettings() -> ref<TMCSettings> {
