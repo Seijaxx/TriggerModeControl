@@ -353,12 +353,14 @@ protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: re
 @wrapMethod(ChargeEvents)
 protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptInterface>) -> Float {
   let chargeTime: Float = wrappedMethod(scriptInterface);
-  let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-  if (weaponObject.WeaponHasTag(n"UnslowableChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-  || (weaponObject.WeaponHasTag(n"UnslowableChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
-    if chargeTime > 0.0 {
-      let timeSystem: ref<TimeSystem> = scriptInterface.GetTimeSystem();
-      if timeSystem.IsTimeDilationActive(n"sandevistan") {
+  if chargeTime > 0.0 {
+    let timeSystem: ref<TimeSystem> = scriptInterface.GetTimeSystem();
+    if timeSystem.IsTimeDilationActive(n"sandevistan") {
+      let settings: wref<TMCSettings> = TMCSettings.GetSettings();
+      let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+      if settings.overrideChargeSpeed
+      || (weaponObject.WeaponHasTag(n"UnslowableChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+      || (weaponObject.WeaponHasTag(n"UnslowableChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
         chargeTime /= timeSystem.GetActiveTimeDilation(n"sandevistan");
       };
     };
