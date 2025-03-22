@@ -8,11 +8,6 @@ import TriggerModeControl.Config.*
 @addMethod(EquipmentBaseTransition)
 private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScriptInterface>) -> Int32 {
   let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
-/*
-  if !weaponObject.HasSecondaryTriggerMode() {
-   return 1;
-  };
-*/
   let triggerModesArray: array<wref<TriggerMode_Record>>;
   weaponObject.GetWeaponRecord().TriggerModes(triggerModesArray);
   return ArraySize(triggerModesArray);
@@ -153,7 +148,7 @@ protected final func OnAttach(const stateContext: ref<StateContext>, const scrip
     this.EnableOnEnterCondition(IsDefined(weaponObject.GetWeaponRecord().SecondaryTriggerMode()));
     return;
   };
-  this.EnableOnEnterCondition(weaponObject.HasSecondaryTriggerMode());
+  this.EnableOnEnterCondition(this.GetWeaponTriggerModesNumber(scriptInterface) > 1);
 }
 
 @wrapMethod(CycleTriggerModeEvents)
@@ -415,5 +410,4 @@ protected final const func IsDischargePerfect(game: GameInstance, weaponObject: 
   };
   return result;
 }
-
 
