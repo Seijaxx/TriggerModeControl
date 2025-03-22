@@ -8,9 +8,11 @@ import TriggerModeControl.Config.*
 @addMethod(EquipmentBaseTransition)
 private final func GetWeaponTriggerModesNumber(scriptInterface: ref<StateGameScriptInterface>) -> Int32 {
   let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
+/*
   if !weaponObject.HasSecondaryTriggerMode() {
    return 1;
   };
+*/
   let triggerModesArray: array<wref<TriggerMode_Record>>;
   weaponObject.GetWeaponRecord().TriggerModes(triggerModesArray);
   return ArraySize(triggerModesArray);
@@ -203,17 +205,17 @@ protected final const func IsPrimaryTriggerModeActive(const scriptInterface: ref
 }
 
 @replaceMethod(WeaponTransition)
-  protected final func SetupStandardShootingSequence(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
-    let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-    let statsSystem: ref<StatsSystem> = scriptInterface.GetStatsSystem();
-    let burstCycleTimeStat: gamedataStatType = gamedataStatType.CycleTime_Burst;
-    let burstNumShots: gamedataStatType = gamedataStatType.NumShotsInBurst;
-    if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 && !this.IsPrimaryTriggerModeActive(scriptInterface) {
-      burstCycleTimeStat = gamedataStatType.CycleTime_BurstSecondary;
-      burstNumShots = gamedataStatType.NumShotsInBurstSecondary;
-    };
-    this.StartShootingSequence(stateContext, scriptInterface, statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.PreFireTime), statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstCycleTimeStat), Cast<Int32>(statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstNumShots)), false);
-  }
+protected final func SetupStandardShootingSequence(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  let statsSystem: ref<StatsSystem> = scriptInterface.GetStatsSystem();
+  let burstCycleTimeStat: gamedataStatType = gamedataStatType.CycleTime_Burst;
+  let burstNumShots: gamedataStatType = gamedataStatType.NumShotsInBurst;
+  if this.GetWeaponTriggerModesNumber(scriptInterface) > 1 && !this.IsPrimaryTriggerModeActive(scriptInterface) {
+    burstCycleTimeStat = gamedataStatType.CycleTime_BurstSecondary;
+    burstNumShots = gamedataStatType.NumShotsInBurstSecondary;
+  };
+  this.StartShootingSequence(stateContext, scriptInterface, statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.PreFireTime), statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstCycleTimeStat), Cast<Int32>(statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), burstNumShots)), false);
+}
 
 // select correct attack
 @replaceMethod(WeaponTransition)
@@ -413,4 +415,5 @@ protected final const func IsDischargePerfect(game: GameInstance, weaponObject: 
   };
   return result;
 }
+
 
