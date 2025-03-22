@@ -41,7 +41,16 @@ Prereqs.IsSecondaryTrigger:
     objectToCheck: Player
 
 
+## Fixes
+Items.Preset_Nue_Maiko: &BurstFix
+    triggerModes: [ TriggerMode.Burst ]
+    secondaryTriggerMode: None
 
+Items.Preset_Igla_Sovereign: *BurstFix
+
+Items.Base_Hercules:
+    triggerModes: [ TriggerMode.FullAuto ]
+    secondaryTriggerMode: None
 
 
 
