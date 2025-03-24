@@ -6,7 +6,7 @@ import TriggerModeControl.Config.*
 
 // helper method
 @addMethod(WeaponObject)
-protected final func HasMultipleValidTriggers(scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+protected final func HasMultipleValidTriggers() -> Bool {
   let triggerModesArray: array<wref<TriggerMode_Record>>;
   this.GetWeaponRecord().TriggerModes(triggerModesArray);
   if ArraySize(triggerModesArray) > 1 {
@@ -30,7 +30,7 @@ protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScrip
   if weaponObject.WeaponHasTag(n"ManualTriggerSwap") {
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
   };
-  if !stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) && weaponObject.HasMultipleValidTriggers(scriptInterface) && ((settings.overrideOthers && !isTech) || (settings.overrideTech && isTech)) {
+  if !stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) && weaponObject.HasMultipleValidTriggers() && ((settings.overrideOthers && !isTech) || (settings.overrideTech && isTech)) {
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlOverride", true, true);
   };
@@ -136,7 +136,7 @@ protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: re
 @replaceMethod(CycleTriggerModeDecisions)
 protected final func OnAttach(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Void {
   let weaponObject: ref<WeaponObject> = scriptInterface.owner as WeaponObject;
-  this.EnableOnEnterCondition(weaponObject.HasMultipleValidTriggers(scriptInterface));
+  this.EnableOnEnterCondition(weaponObject.HasMultipleValidTriggers());
 }
 
 @replaceMethod(CycleTriggerModeDecisions)  
