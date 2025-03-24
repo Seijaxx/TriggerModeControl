@@ -7,16 +7,11 @@ import TriggerModeControl.Config.*
 // helper method
 @addMethod(WeaponObject)
 protected final func HasMultipleValidTriggers(scriptInterface: ref<StateGameScriptInterface>) -> Bool {
-  let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
-  if IsDefined(weaponObject) {
-    let triggerModesArray: array<wref<TriggerMode_Record>>;
-    weaponObject.GetWeaponRecord().TriggerModes(triggerModesArray);
-    if ArraySize(triggerModesArray) > 1 {
-      let itemID: ItemID = weaponObject.GetItemID();
-      let weaponRecord: ref<WeaponItem_Record> = TweakDBInterface.GetWeaponItemRecord(ItemID.GetTDBID(itemID));
-      let secondaryTrigger: wref<TriggerMode_Record> = weaponRecord.SecondaryTriggerMode();
-      return IsDefined(secondaryTrigger);
-    };
+  let triggerModesArray: array<wref<TriggerMode_Record>>;
+  this.GetWeaponRecord().TriggerModes(triggerModesArray);
+  if ArraySize(triggerModesArray) > 1 {
+    let secondaryTrigger: wref<TriggerMode_Record> = this.GetWeaponRecord().SecondaryTriggerMode();
+    return IsDefined(secondaryTrigger);
   };
   return false;
 }
