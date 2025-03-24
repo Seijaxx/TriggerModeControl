@@ -26,8 +26,8 @@ BaseStatusEffect.PlayerSecondaryTrigger:
     gameplayTags:
     -   !append SecondaryTrigger
 #    uiData:
-#        displayName: Armor increased
-#        iconPath: armor_boost
+#        displayName: "Secondary trigger"
+#        iconPath: perks_aim
 
 Prereqs.IsPrimaryTrigger:
     $type: StatusEffectPrereq
