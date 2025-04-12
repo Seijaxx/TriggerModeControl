@@ -6,7 +6,7 @@ import TriggerModeControl.Config.*
 
 // helper method
 @addMethod(WeaponObject)
-protected final func HasMultipleValidTriggers() -> Bool {
+protected final func HasMultipleValidTriggers(scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let triggerModesArray: array<wref<TriggerMode_Record>>;
   this.GetWeaponRecord().TriggerModes(triggerModesArray);
   if ArraySize(triggerModesArray) > 1 {
@@ -30,7 +30,7 @@ protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScrip
   if weaponObject.WeaponHasTag(n"ManualTriggerSwap") {
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
   };
-  if !stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) && weaponObject.HasMultipleValidTriggers() && ((settings.overrideOthers && !isTech) || (settings.overrideTech && isTech)) {
+  if !stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) && weaponObject.HasMultipleValidTriggers(scriptInterface) && ((settings.overrideOthers && !isTech) || (settings.overrideTech && isTech)) {
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
     stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlOverride", true, true);
   };
@@ -136,7 +136,7 @@ protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: re
 @replaceMethod(CycleTriggerModeDecisions)
 protected final func OnAttach(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Void {
   let weaponObject: ref<WeaponObject> = scriptInterface.owner as WeaponObject;
-  this.EnableOnEnterCondition(weaponObject.HasMultipleValidTriggers());
+  this.EnableOnEnterCondition(weaponObject.HasMultipleValidTriggers(scriptInterface));
 }
 
 @replaceMethod(CycleTriggerModeDecisions)  
@@ -220,8 +220,9 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
   let isSecondary: Bool = stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true);
   let magazine: InnerItemData;
   let rangedAttack: ref<RangedAttack_Record>;
-  let weaponCharge: Float;
   let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+  let weaponCharge: Float;
+  let chargeReadyPercentage: Float = GameInstance.GetStatsSystem(weaponObject.GetGame()).GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.ChargeReadyPercentage);
   this.m_rangedAttackPackage = weaponObject.GetCurrentRangedAttack();
   weaponObject.GetItemData().GetItemPart(magazine, t"AttachmentSlots.DamageMod");
   if this.m_magazineID != ItemID.GetTDBID(InnerItemData.GetItemID(magazine)) {
@@ -238,8 +239,11 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
     isSecondary = stateContext.IsStateActive(n"UpperBody", n"aimingState");
   };
   
+  if chargeReadyPercentage <= 0.0 {
+    chargeReadyPercentage = 1.0;
+  };
   weaponCharge = WeaponObject.GetWeaponChargeNormalized(weaponObject);
-  rangedAttack = weaponCharge >= 1.00 ? this.m_rangedAttackPackage.ChargeFire() : this.m_rangedAttackPackage.DefaultFire();
+  rangedAttack = weaponCharge >= chargeReadyPercentage ? this.m_rangedAttackPackage.ChargeFire() : this.m_rangedAttackPackage.DefaultFire();
   if scriptInterface.GetTimeSystem().IsTimeDilationActive() {
     if isSecondary {
       attackRecord = rangedAttack.SecondaryPlayerTimeDilated();
