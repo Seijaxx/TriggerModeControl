@@ -17,6 +17,9 @@ class FillMissingGunSounds extends ScriptableService {
         if Equals(audioWeaponSet.playerSettings, n"wea_pla_grad_suppressor") {
           audioWeaponSet.playerSilenced = n"wea_pla_grad_suppressor";
         };
+        if Equals(audioWeaponSet.playerSettings, n"wea_pla_ticon_reed") || Equals(audioWeaponSet.playerSilenced, n"wea_pla_ticon_suppressor") {
+          audioWeaponSet.playerSilenced = n"wea_pla_ticon_reed";
+        };
       };
       let audioPlayerSet = audioData as audioPlayerWeaponSettings;
       if IsDefined(audioPlayerSet) && StrContains(NameToString(audioPlayerSet.name), "wea_pla_") {

@@ -29,6 +29,7 @@ BaseStatusEffect.PlayerSecondaryTrigger:
 #        displayName: "Secondary trigger"
 #        iconPath: perks_aim
 
+
 Prereqs.IsPrimaryTrigger:
     $type: StatusEffectPrereq
     statusEffect: BaseStatusEffect.PlayerSecondaryTrigger
@@ -48,9 +49,8 @@ Items.Preset_Nue_Maiko: &BurstFix
 
 Items.Preset_Igla_Sovereign: *BurstFix
 
-Items.Base_Hercules:
-    triggerModes: [ TriggerMode.FullAuto ]
-    secondaryTriggerMode: None
+#Items.Base_Hercules:
+#    triggerModes: [ TriggerMode.FullAuto, TriggerMode.FullAuto ]
 
 
 
