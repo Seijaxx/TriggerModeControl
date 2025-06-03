@@ -346,15 +346,19 @@ protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: re
   };
 }
 
-// UnslowableCharge
+// UnslowableCharge & InstantCharge
 @wrapMethod(ChargeEvents)
 protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptInterface>) -> Float {
   let chargeTime: Float = wrappedMethod(scriptInterface);
   if chargeTime > 0.0 {
+    let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
+    if (weaponObject.WeaponHasTag(n"InstantChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+    || (weaponObject.WeaponHasTag(n"InstantChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+      return chargeTime * 100.0;
+    };
     let timeSystem: ref<TimeSystem> = scriptInterface.GetTimeSystem();
     if timeSystem.IsTimeDilationActive(n"sandevistan") {
       let settings: wref<TMCSettings> = TMCSettings.GetSettings();
-      let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
       if settings.overrideChargeSpeed
       || (weaponObject.WeaponHasTag(n"UnslowableChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
       || (weaponObject.WeaponHasTag(n"UnslowableChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
@@ -364,6 +368,7 @@ protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptIn
   };
   return chargeTime;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Extra
@@ -395,15 +400,15 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
   };
 }
 
-// Internal Clock Rework compatibility
+// Free Bolt protection
 @wrapMethod(PerfectDischargePrereq)
 protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
   let result: Bool = wrappedMethod(game, weaponObject, state);
   if result {
     let player: wref<GameObject> = GameInstance.GetPlayerSystem(game).GetLocalPlayerControlledGameObject();
     if IsDefined(player) {
-      if (weaponObject.WeaponHasTag(n"ForceAutoPrimary") && !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-      || (weaponObject.WeaponHasTag(n"ForceAutoSecondary") && StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+      if ((weaponObject.WeaponHasTag(n"ForceAutoPrimary") || weaponObject.WeaponHasTag(n"InstantChargePrimary")) && !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+      || ((weaponObject.WeaponHasTag(n"ForceAutoSecondary") || weaponObject.WeaponHasTag(n"InstantChargeSecondary")) && StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
         return false;
       };
     };
