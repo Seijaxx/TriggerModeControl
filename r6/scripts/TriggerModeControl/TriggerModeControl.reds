@@ -107,25 +107,36 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
   };
 }
 
-// add input hints
+// add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
+  let psmBodyCarrying: gamePSMBodyCarrying = IntEnum<gamePSMBodyCarrying>(scriptInterface.localBlackboard.GetInt(GetAllBlackboardDefs().PlayerStateMachine.BodyCarrying));
+  if Equals(psmBodyCarrying, gamePSMBodyCarrying.Carry) {
+    this.ShowBodyCarryInputHints(stateContext, scriptInterface);
+  };
 }
 
-// Vehicle Combat: add input hints
+// Vehicle Combat: add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombat");
 }
 
-// Vehicle Combat: add input hints
+// Vehicle Combat: add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombatTPP");
+}
+
+// Aiming state: update input hint
+@wrapMethod(AimingContextEvents)
+protected final func OnUpdate(timeDelta: Float, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(timeDelta, stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
 }
 
 
