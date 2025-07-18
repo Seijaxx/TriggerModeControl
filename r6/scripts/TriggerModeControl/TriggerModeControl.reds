@@ -321,7 +321,7 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
 // PartialChargeFire
 @replaceMethod(ChargeDecisions)
 protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
-  let lastShotTime: Float;
+  let lastShotTime: Double;
   let actionPressCount: Uint32 = scriptInterface.GetActionPressCount(n"RangedAttack");
   let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(n"LastChargePressCount");
   if lastChargePressCount.valid && lastChargePressCount.value == Cast<Int32>(actionPressCount) {
@@ -329,8 +329,8 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
       this.EnableOnEnterCondition(false);
       return false;
     };
-    lastShotTime = stateContext.GetFloatParameter(n"LastShotTime", true);
-    if EngineTime.ToFloat(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00 {
+    lastShotTime = stateContext.GetDoubleParameter(n"LastShotTime", true);
+    if EngineTime.ToDouble(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00d {
       return false;
     };
   };
