@@ -69,7 +69,7 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
 // InputContextTransitionEvents
 
 @addMethod(InputContextTransitionEvents)
-private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
+private final func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
   if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {
     let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
     let weaponRecord: wref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
@@ -419,7 +419,7 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
   };
 }
 
-// Free Bolt protection
+// free Bolt protection
 @wrapMethod(PerfectDischargePrereq)
 protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
   let result: Bool = wrappedMethod(game, weaponObject, state);
@@ -435,7 +435,7 @@ protected final const func IsDischargePerfect(game: GameInstance, weaponObject: 
   return result;
 }
 
-// Silenced snipers fix
+// silenced snipers fix
 @replaceMethod(GameEffectExecutor_StimOnHit)
 public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionScriptContext) -> Bool {
   let silentStimRadius: Float = 0.00;
