@@ -52,6 +52,9 @@ Items.Preset_Igla_Sovereign: *BurstFix
 #Items.Base_Hercules:
 #    triggerModes: [ TriggerMode.FullAuto, TriggerMode.FullAuto ]
 
+Items.Preset_Grad_Panam:
+    tags:
+    -   !append Silenced
 
 
 ## Un-silenced Silencers

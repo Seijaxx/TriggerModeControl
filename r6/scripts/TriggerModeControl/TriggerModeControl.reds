@@ -4,7 +4,7 @@ import TriggerModeControl.Config.*
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // WeaponObject
 
-// helper method
+// helper methods
 @addMethod(WeaponObject)
 protected final func HasMultipleValidTriggers() -> Bool {
   let triggerModesArray: array<wref<TriggerMode_Record>>;
@@ -12,6 +12,21 @@ protected final func HasMultipleValidTriggers() -> Bool {
   if ArraySize(triggerModesArray) > 1 {
     let secondaryTrigger: wref<TriggerMode_Record> = this.GetWeaponRecord().SecondaryTriggerMode();
     return IsDefined(secondaryTrigger);
+  };
+  return false;
+}
+
+@addMethod(WeaponObject)
+protected final func WeaponHasTagOnTrigger(tag: CName) -> Bool {
+  if this.GetOwner().IsPlayer() {
+    if this.WeaponHasTag(tag) {
+      return true;
+    };
+    if StatusEffectSystem.ObjectHasStatusEffect(this.GetOwner(), t"BaseStatusEffect.PlayerSecondaryTrigger") {
+      return this.WeaponHasTag(StringToName(NameToString(tag)+"Secondary"));
+    } else {
+      return this.WeaponHasTag(StringToName(NameToString(tag)+"Primary"));
+    };
   };
   return false;
 }
@@ -54,7 +69,7 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
 // InputContextTransitionEvents
 
 @addMethod(InputContextTransitionEvents)
-private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
+private final func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
   if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {
     let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
     let weaponRecord: wref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
@@ -107,21 +122,32 @@ private final const func AddTriggerModeCtrlInputHints(stateContext: ref<StateCon
   };
 }
 
-// add input hints
+// add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
+  let psmBodyCarrying: gamePSMBodyCarrying = IntEnum<gamePSMBodyCarrying>(scriptInterface.localBlackboard.GetInt(GetAllBlackboardDefs().PlayerStateMachine.BodyCarrying));
+  if Equals(psmBodyCarrying, gamePSMBodyCarrying.Carry) {
+    this.ShowBodyCarryInputHints(stateContext, scriptInterface);
+  };
 }
 
-// Vehicle Combat: add input hints
+// Aiming state: update input hint
+@wrapMethod(AimingContextEvents)
+protected final func OnUpdate(timeDelta: Float, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(timeDelta, stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
+}
+
+// Vehicle Combat: add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombat");
 }
 
-// Vehicle Combat: add input hints
+// Vehicle Combat: add input hint
 @wrapMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
@@ -265,10 +291,7 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
 @wrapMethod(WeaponTransition)
 protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
-  if weaponObject.WeaponHasTag(n"ForceAutoPrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger") {
-    return true;
-  };
-  if weaponObject.WeaponHasTag(n"ForceAutoSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger") {
+  if weaponObject.WeaponHasTagOnTrigger(n"ForceAuto") {
     return true;
   };
   let settings: wref<TMCSettings> = TMCSettings.GetSettings();
@@ -288,8 +311,7 @@ protected final const func CanHoldToShoot(scriptInterface: ref<StateGameScriptIn
 @wrapMethod(WeaponTransition)
 protected final const func IsFullAutoAction(weaponObject: ref<WeaponObject>, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let result: Bool = wrappedMethod(weaponObject, stateContext, scriptInterface);
-  if (weaponObject.WeaponHasTag(n"RemoveAutoPrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-  || (weaponObject.WeaponHasTag(n"RemoveAutoSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+  if weaponObject.WeaponHasTagOnTrigger(n"RemoveAuto") {
     return scriptInterface.IsActionJustPressed(n"RangedAttack");
   };
   return result;
@@ -310,7 +332,7 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
 // PartialChargeFire
 @replaceMethod(ChargeDecisions)
 protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
-  let lastShotTime: Float;
+  let lastShotTime: Double;
   let actionPressCount: Uint32 = scriptInterface.GetActionPressCount(n"RangedAttack");
   let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(n"LastChargePressCount");
   if lastChargePressCount.valid && lastChargePressCount.value == Cast<Int32>(actionPressCount) {
@@ -318,8 +340,8 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
       this.EnableOnEnterCondition(false);
       return false;
     };
-    lastShotTime = stateContext.GetFloatParameter(n"LastShotTime", true);
-    if EngineTime.ToFloat(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00 {
+    lastShotTime = stateContext.GetDoubleParameter(n"LastShotTime", true);
+    if EngineTime.ToDouble(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00d {
       return false;
     };
   };
@@ -335,12 +357,11 @@ protected final func OnExit(stateContext: ref<StateContext>, scriptInterface: re
   let statsSystem: ref<StatsSystem> = scriptInterface.GetStatsSystem();
   let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
   if Equals(statsSystem.GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.FullAutoOnFullCharge), 0.00) {
-    if !weaponObject.WeaponHasTag(n"GradualChargeDecay") {
+    if !weaponObject.WeaponHasTagOnTrigger(n"GradualChargeDecay") {
       statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
     };
   } else {
-    if (weaponObject.WeaponHasTag(n"ForceInstantDischargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-    || (weaponObject.WeaponHasTag(n"ForceInstantDischargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+    if weaponObject.WeaponHasTagOnTrigger(n"ForceInstantDischarge") {
       statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, this.GetWeaponChargeMinValue(scriptInterface), scriptInterface.executionOwner);
     };
   };
@@ -352,16 +373,14 @@ protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptIn
   let chargeTime: Float = wrappedMethod(scriptInterface);
   if chargeTime > 0.0 {
     let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-    if (weaponObject.WeaponHasTag(n"InstantChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-    || (weaponObject.WeaponHasTag(n"InstantChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+    if weaponObject.WeaponHasTagOnTrigger(n"InstantCharge") {
       return chargeTime * 100.0;
     };
     let timeSystem: ref<TimeSystem> = scriptInterface.GetTimeSystem();
     if timeSystem.IsTimeDilationActive(n"sandevistan") {
       let settings: wref<TMCSettings> = TMCSettings.GetSettings();
       if settings.overrideChargeSpeed
-      || (weaponObject.WeaponHasTag(n"UnslowableChargePrimary") && !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-      || (weaponObject.WeaponHasTag(n"UnslowableChargeSecondary") && StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+      || weaponObject.WeaponHasTagOnTrigger(n"UnslowableCharge") {
         chargeTime /= timeSystem.GetActiveTimeDilation(n"sandevistan");
       };
     };
@@ -400,7 +419,7 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
   };
 }
 
-// Free Bolt protection
+// free Bolt protection
 @wrapMethod(PerfectDischargePrereq)
 protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
   let result: Bool = wrappedMethod(game, weaponObject, state);
@@ -416,3 +435,26 @@ protected final const func IsDischargePerfect(game: GameInstance, weaponObject: 
   return result;
 }
 
+// silenced snipers fix
+@replaceMethod(GameEffectExecutor_StimOnHit)
+public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionScriptContext) -> Bool {
+  let silentStimRadius: Float = 0.00;
+  let position: Vector4 = EffectExecutionScriptContext.GetHitPosition(applierCtx);
+  if Vector4.IsZero(position) {
+    return false;
+  };
+  if GameInstance.GetStatusEffectSystem(EffectScriptContext.GetGameInstance(ctx)).HasStatusEffect(EffectScriptContext.GetSource(ctx).GetEntityID(), t"BaseStatusEffect.PersonalSoundSilencerPlayerBuff") {
+    return false;
+  };
+  if GameInstance.GetStatsSystem(EffectScriptContext.GetGameInstance(ctx)).GetStatValue(Cast<StatsObjectID>(EffectScriptContext.GetWeapon(ctx).GetEntityID()), gamedataStatType.CanSilentKill) > 0.00 {
+    if IsDefined(EffectExecutionScriptContext.GetTarget(applierCtx) as ScriptedPuppet) && RPGManager.HasStatFlag(EffectScriptContext.GetInstigator(ctx) as GameObject, gamedataStatType.CanPlayerGagOnDetection) {
+      silentStimRadius = 3.00;
+    };
+  } else {
+    if !this.CreateStim(ctx, this.stimType, position) {
+      return false;
+    };
+    silentStimRadius = 20.00;
+  };
+  return this.CreateStim(ctx, this.silentStimType, position, silentStimRadius);
+}

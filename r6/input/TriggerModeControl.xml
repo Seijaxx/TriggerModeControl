@@ -12,15 +12,10 @@
         <include name="TriggerModeCtrlContext" />
     </context>
 
-    <acceptedEvents action="VisionHold" >
-        <event name="BUTTON_HOLD_COMPLETE" />
-        <event name="BUTTON_RELEASED" />
-    </acceptedEvents>
-
     <!-- inputUserMapping -->
     <mapping name="TriggerSwap_Button" type="Button" >
-        <button id="IK_Tab" />
-        <button id="IK_Pad_LeftShoulder" />
+        <button id="IK_T" overridableUI="SwapFiremode" />
+        <button id="IK_Pad_DigitDown" overridableUI="SwapFiremode_Pad" />
     </mapping>
 
 </bindings>
