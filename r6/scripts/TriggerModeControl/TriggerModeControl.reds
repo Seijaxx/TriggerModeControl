@@ -73,53 +73,55 @@ private final func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>,
   if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {
     let weaponObject: wref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
     let weaponRecord: wref<WeaponItem_Record> = weaponObject.GetWeaponRecord();
-    let settings: wref<TMCSettings> = TMCSettings.GetSettings();
-    if Equals(weaponRecord.PrimaryTriggerMode(), weaponRecord.SecondaryTriggerMode()) {
+    let primaryKey: CName = this.GetTriggerModeKey(weaponObject, weaponRecord, 1);
+    let secondaryKey: CName = this.GetTriggerModeKey(weaponObject, weaponRecord, 2);
+    if Equals(primaryKey, secondaryKey) {
       if weaponObject.WeaponHasTag(n"AimingBoundAttacks") {
-        return;
-      };
-      if !stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
         return;
       };
       if stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
         this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-        return;
-      };
-    };
-    if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      return;
-    };
-    if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Charge) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Charge"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      return;
-    };
-    if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.Burst) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Burst"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      return;
-    };
-    if (settings.overrideAuto || weaponObject.WeaponHasTag(n"ForceAutoPrimary")) && !stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
-      if Equals(weaponRecord.SecondaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
+      } else {
         this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Primary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      } else {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
       };
       return;
     };
-    if (settings.overrideAuto || weaponObject.WeaponHasTag(n"ForceAutoSecondary")) && stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
-      if Equals(weaponRecord.PrimaryTriggerMode().Type(), gamedataTriggerMode.FullAuto) {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-Secondary"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      } else {
-        this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-FullAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      };
-      return;
-    };
-    if Equals(weaponObject.GetCurrentTriggerMode().Type(), gamedataTriggerMode.SemiAuto) {
-      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-SemiAuto"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
-      return;
+    if stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(secondaryKey), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+    } else {
+      this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(primaryKey), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
     };
   };
+}
+
+// helper method
+@addMethod(InputContextTransitionEvents)
+private final func GetTriggerModeKey(weaponObject: wref<WeaponObject>, weaponRecord: wref<WeaponItem_Record>, trigger: Int32) -> CName {
+  let triggerStr: String;
+  let triggerType: gamedataTriggerMode;
+  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
+  if Equals(trigger, 2) {
+    triggerType = weaponRecord.SecondaryTriggerMode().Type();
+    triggerStr = "Secondary";
+  } else {
+    triggerType = weaponRecord.PrimaryTriggerMode().Type();
+    triggerStr = "Primary";
+  };
+  if settings.overrideAuto || weaponObject.WeaponHasTag(n"ForceAuto") || weaponObject.WeaponHasTag(StringToName("ForceAuto" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-FullAuto";
+  };
+  if weaponObject.WeaponHasTag(n"RemoveAuto") || weaponObject.WeaponHasTag(StringToName("RemoveAuto" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-SemiAuto";
+  };
+  if weaponObject.WeaponHasTag(n"InstantCharge") || weaponObject.WeaponHasTag(StringToName("InstantCharge" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-SemiAuto";
+  };
+  switch triggerType {
+    case gamedataTriggerMode.FullAuto: return n"Mod-TriggerModeCtrl-FullAuto";
+    case gamedataTriggerMode.Charge: return n"Mod-TriggerModeCtrl-Charge";
+    case gamedataTriggerMode.Burst: return n"Mod-TriggerModeCtrl-Burst";
+  };
+  return n"Mod-TriggerModeCtrl-SemiAuto";
 }
 
 // add input hint
@@ -169,6 +171,7 @@ public final static func IsChargeRangedWeapon(const scriptInterface: ref<StateGa
   };
   return result;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // CycleTriggerModeDecisions and CycleTriggerModeEvents, ReadyEvents
