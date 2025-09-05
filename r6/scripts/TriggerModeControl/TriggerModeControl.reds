@@ -154,6 +154,21 @@ protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: re
   this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombatTPP");
 }
 
+// hide "Charged Shot" hint when charge is instant
+@wrapMethod(DefaultTransition)
+public final static func IsChargeRangedWeapon(const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let result: Bool = wrappedMethod(scriptInterface);
+  if result {
+    let weapon: ref<WeaponObject> = GameInstance.GetTransactionSystem(scriptInterface.owner.GetGame()).GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
+    if weapon.WeaponHasTagOnTrigger(n"InstantCharge") {
+      return false;
+    };
+    if Equals(scriptInterface.GetStatsSystem().GetStatValue(Cast<StatsObjectID>(weapon.GetEntityID()), gamedataStatType.ChargeTime), 0.00) {
+      return false;
+    };
+  };
+  return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // CycleTriggerModeDecisions and CycleTriggerModeEvents, ReadyEvents
