@@ -29,6 +29,9 @@ BaseStatusEffect.PlayerSecondaryTrigger:
 #        displayName: "Secondary trigger"
 #        iconPath: perks_aim
 
+BaseStatusEffect.ManualTriggerSwapEnabled:
+    $base: BaseStatusEffect.BuffStatusEffect
+    duration: BaseStats.InfiniteDuration
 
 Prereqs.IsPrimaryTrigger:
     $type: StatusEffectPrereq
