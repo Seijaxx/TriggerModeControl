@@ -138,27 +138,6 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
   return wrappedMethod(stateContext, scriptInterface);
 }
 
-/*
-@replaceMethod(CycleTriggerModeDecisions)  
-protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
-  if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {
-    if this.manualSwap {
-      this.manualSwap = false;
-      return true;
-    } else {
-      return false;
-    };
-  };
-  if stateContext.IsStateActive(n"UpperBody", n"aimingState") && this.IsPrimaryTriggerModeActive(scriptInterface) {
-    return true;
-  };
-  if !stateContext.IsStateActive(n"UpperBody", n"aimingState") && !this.IsPrimaryTriggerModeActive(scriptInterface) {
-    return true;
-  };
-  return false;
-}
-*/
-
 @wrapMethod(CycleTriggerModeEvents)
 protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
   wrappedMethod(stateContext, scriptInterface);
@@ -182,6 +161,153 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
       statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, 0.0, scriptInterface.executionOwner);
     };
   };
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// WeaponRosterGameController
+
+@addField(WeaponRosterGameController)
+let activeTrigger: ref<inkText>;
+
+@addField(WeaponRosterGameController)
+let projectE3HUD: Bool;
+
+@wrapMethod(WeaponRosterGameController)
+protected cb func OnInitialize() -> Bool {
+  this.activeTrigger = new inkText();
+  this.activeTrigger.SetName(n"trigger_indicator");
+  this.activeTrigger.SetFitToContent(true);
+  this.activeTrigger.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
+  this.activeTrigger.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
+  this.activeTrigger.SetAnchorPoint(0.0, 0.0);
+  this.activeTrigger.SetAnchor(inkEAnchor.BottomLeft);
+  this.activeTrigger.SetHAlign(inkEHorizontalAlign.Left);
+  this.activeTrigger.SetContentHAlign(inkEHorizontalAlign.Left);
+  this.activeTrigger.SetHorizontalAlignment(textHorizontalAlignment.Left);
+  this.activeTrigger.SetVAlign(inkEVerticalAlign.Bottom);
+  this.activeTrigger.SetContentVAlign(inkEVerticalAlign.Bottom);
+  this.activeTrigger.SetVerticalAlignment(textVerticalAlignment.Bottom);
+  this.activeTrigger.SetLetterCase(textLetterCase.UpperCase);
+  this.activeTrigger.SetVisible(true);
+  this.activeTrigger.SetOpacity(0.0);
+  let parent: ref<inkCompoundWidget> = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/weapon_wrapper/new_ammo_wrapper/selective_fire") as inkCompoundWidget);          // Project E3 - HUD
+  if IsDefined(parent) {
+    parent.RemoveAllChildren();
+    this.activeTrigger.BindProperty(n"tintColor", n"MainColors.Red");
+    this.activeTrigger.SetMargin(95.0, -10.0, 0.0, 0.0);
+    this.activeTrigger.SetFontStyle(n"Bold");
+    this.activeTrigger.SetFontSize(41);
+  } else {
+    parent = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter") as inkCompoundWidget);
+    this.activeTrigger.BindProperty(n"tintColor", n"MainColors.ActiveBlue");
+    this.activeTrigger.SetMargin(13.0, -30.0, 0.0, 0.0);
+    this.activeTrigger.SetFontStyle(n"Medium");
+    this.activeTrigger.SetFontSize(32);
+  };
+  this.activeTrigger.Reparent(parent);
+  return wrappedMethod();
+}
+
+@wrapMethod(WeaponRosterGameController)
+protected cb func OnUninitialize() -> Bool {
+  this.activeTrigger = null;
+  return wrappedMethod();
+}
+
+@if(!ModuleExists("LimitedHudCommon"))
+@addMethod(WeaponRosterGameController)
+protected final func IsWidgetVisible() -> Bool {
+  return IsDefined(this.m_player);
+}
+
+@if(ModuleExists("LimitedHudCommon"))
+@addMethod(WeaponRosterGameController)
+protected final func IsWidgetVisible() -> Bool {
+  return this.lhudConfig.IsEnabled ? this.lhud_isVisibleNow : this.lhud_isWeaponUnsheathed;
+}
+
+@addMethod(WeaponRosterGameController)
+protected final func SetTriggerIndicatorVisibility() -> Void {
+  let primaryKey: CName = this.GetTriggerModeKey(false);
+  let secondaryKey: CName = this.GetTriggerModeKey(true);
+  if Equals(primaryKey, secondaryKey) && this.m_weaponRecord.TagsContains(n"AimingBoundAttacks"){
+    this.activeTrigger.SetOpacity(0.0);
+    return;
+  };
+  if this.m_weaponRecord.CanSwapTriggers() && this.IsWidgetVisible() {
+    this.activeTrigger.SetOpacity(1.0);
+    return;
+  };
+  this.activeTrigger.SetOpacity(0.0);
+}
+
+@wrapMethod(WeaponRosterGameController)
+private final func SetRosterSlotData() -> Void {
+  wrappedMethod();
+  this.SetTriggerIndicatorVisibility();
+}
+
+@if(ModuleExists("LimitedHudCommon"))
+@wrapMethod(WeaponRosterGameController)
+protected cb func OnLHUDEvent(evt: ref<LHUDEvent>) -> Void {
+  wrappedMethod(evt);
+  this.SetTriggerIndicatorVisibility();
+}
+
+@wrapMethod(WeaponRosterGameController)
+protected cb func OnPSMWeaponStateChanged(value: Int32) -> Bool {
+  let result: Bool = wrappedMethod(value);
+  if Equals(value, 0) {
+    this.activeTrigger.SetOpacity(0.0);
+  };
+  return result;
+}
+
+@addMethod(WeaponRosterGameController)
+private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
+  let triggerStr: String;
+  let triggerType: gamedataTriggerMode;
+  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
+  if secondaryTrigger {
+    triggerType = this.m_weaponRecord.SecondaryTriggerMode().Type();
+    triggerStr = "Secondary";
+  } else {
+    triggerType = this.m_weaponRecord.PrimaryTriggerMode().Type();
+    triggerStr = "Primary";
+  };
+  if settings.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-FullAuto";
+  };
+  if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-SemiAuto";
+  };
+  if this.m_weaponRecord.TagsContains(n"InstantCharge") || this.m_weaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) {
+    return n"Mod-TriggerModeCtrl-SemiAuto";
+  };
+  switch triggerType {
+    case gamedataTriggerMode.FullAuto: return n"Mod-TriggerModeCtrl-FullAuto";
+    case gamedataTriggerMode.Charge: return n"Mod-TriggerModeCtrl-Charge";
+    case gamedataTriggerMode.Burst: return n"Mod-TriggerModeCtrl-Burst";
+  };
+  return n"Mod-TriggerModeCtrl-SemiAuto";
+}
+
+@addMethod(WeaponRosterGameController)
+private final func GetCurrentTriggerModeKey() -> CName {
+  let secondaryTrigger: Bool = StatusEffectSystem.ObjectHasStatusEffect(this.m_player, t"BaseStatusEffect.PlayerSecondaryTrigger");
+  let primaryKey: CName = this.GetTriggerModeKey(false);
+  let secondaryKey: CName = this.GetTriggerModeKey(true);
+  if Equals(primaryKey, secondaryKey) || this.m_weaponRecord.TagsContains(n"SimpleTriggerLabels") {
+    return secondaryTrigger ? n"Mod-TriggerModeCtrl-Secondary" : n"Mod-TriggerModeCtrl-Primary";
+  };
+  return secondaryTrigger ? secondaryKey : primaryKey;
+}
+
+@wrapMethod(WeaponRosterGameController)
+protected cb func OnWeaponDataChanged(value: Variant) -> Bool {
+  let result: Bool = wrappedMethod(value);
+  this.activeTrigger.SetText(GetLocalizedTextByKey(this.GetCurrentTriggerModeKey()));
+  return result;
 }
 
 
@@ -429,156 +555,5 @@ public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionS
     silentStimRadius = 20.00;
   };
   return this.CreateStim(ctx, this.silentStimType, position, silentStimRadius);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-// Widget
-
-@addField(WeaponRosterGameController)
-let activeTrigger: ref<inkText>;
-
-@addField(WeaponRosterGameController)
-let projectE3HUD: Bool;
-
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnInitialize() -> Bool {
-  this.activeTrigger = new inkText();
-  this.activeTrigger.SetName(n"trigger_indicator");
-  this.activeTrigger.SetFitToContent(true);
-  this.activeTrigger.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
-  this.activeTrigger.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
-  this.activeTrigger.SetAnchorPoint(0.0, 0.0);
-  this.activeTrigger.SetAnchor(inkEAnchor.BottomLeft);
-  this.activeTrigger.SetHAlign(inkEHorizontalAlign.Left);
-  this.activeTrigger.SetContentHAlign(inkEHorizontalAlign.Left);
-  this.activeTrigger.SetHorizontalAlignment(textHorizontalAlignment.Left);
-  this.activeTrigger.SetVAlign(inkEVerticalAlign.Bottom);
-  this.activeTrigger.SetContentVAlign(inkEVerticalAlign.Bottom);
-  this.activeTrigger.SetVerticalAlignment(textVerticalAlignment.Bottom);
-  this.activeTrigger.SetLetterCase(textLetterCase.UpperCase);
-  this.activeTrigger.SetVisible(true);
-  this.activeTrigger.SetOpacity(0.0);
-  let parent: ref<inkCompoundWidget> = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/weapon_wrapper/new_ammo_wrapper/selective_fire") as inkCompoundWidget);          // Project E3 - HUD
-  if IsDefined(parent) {
-    parent.RemoveAllChildren();
-    this.activeTrigger.BindProperty(n"tintColor", n"MainColors.Red");
-    this.activeTrigger.SetMargin(95.0, -10.0, 0.0, 0.0);
-    this.activeTrigger.SetFontStyle(n"Bold");
-    this.activeTrigger.SetFontSize(41);
-  } else {
-    parent = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter") as inkCompoundWidget);
-    this.activeTrigger.BindProperty(n"tintColor", n"MainColors.ActiveBlue");
-    this.activeTrigger.SetMargin(13.0, -30.0, 0.0, 0.0);
-    this.activeTrigger.SetFontStyle(n"Medium");
-    this.activeTrigger.SetFontSize(32);
-  };
-  this.activeTrigger.Reparent(parent);
-  return wrappedMethod();
-}
-
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnUninitialize() -> Bool {
-  this.activeTrigger = null;
-  return wrappedMethod();
-}
-
-@if(!ModuleExists("LimitedHudCommon"))
-@addMethod(WeaponRosterGameController)
-protected final func IsWidgetVisible() -> Bool {
-  return IsDefined(this.m_player);
-}
-
-@if(ModuleExists("LimitedHudCommon"))
-@addMethod(WeaponRosterGameController)
-protected final func IsWidgetVisible() -> Bool {
-  return this.lhudConfig.IsEnabled ? this.lhud_isVisibleNow : this.lhud_isWeaponUnsheathed;
-}
-
-@addMethod(WeaponRosterGameController)
-protected final func SetTriggerIndicatorVisibility() -> Void {
-  let primaryKey: CName = this.GetTriggerModeKey(false);
-  let secondaryKey: CName = this.GetTriggerModeKey(true);
-  if Equals(primaryKey, secondaryKey) && this.m_weaponRecord.TagsContains(n"AimingBoundAttacks"){
-    this.activeTrigger.SetOpacity(0.0);
-    return;
-  };
-  if this.m_weaponRecord.CanSwapTriggers() && this.IsWidgetVisible() {
-    this.activeTrigger.SetOpacity(1.0);
-    return;
-  };
-  this.activeTrigger.SetOpacity(0.0);
-}
-
-@wrapMethod(WeaponRosterGameController)
-private final func SetRosterSlotData() -> Void {
-  wrappedMethod();
-  LogChannel(n"DEBUG", "SetRosterSlotData");
-  this.SetTriggerIndicatorVisibility();
-}
-
-@if(ModuleExists("LimitedHudCommon"))
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnLHUDEvent(evt: ref<LHUDEvent>) -> Void {
-  wrappedMethod(evt);
-  LogChannel(n"DEBUG", "OnLHUDEvent");
-  this.SetTriggerIndicatorVisibility();
-}
-
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnPSMWeaponStateChanged(value: Int32) -> Bool {
-  let result: Bool = wrappedMethod(value);
-  LogChannel(n"DEBUG", "OnPSMWeaponStateChanged: "+ToString(value));
-  if Equals(value, 0) {
-    this.activeTrigger.SetOpacity(0.0);
-  };
-  return result;
-}
-
-@addMethod(WeaponRosterGameController)
-private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
-  let triggerStr: String;
-  let triggerType: gamedataTriggerMode;
-  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
-  if secondaryTrigger {
-    triggerType = this.m_weaponRecord.SecondaryTriggerMode().Type();
-    triggerStr = "Secondary";
-  } else {
-    triggerType = this.m_weaponRecord.PrimaryTriggerMode().Type();
-    triggerStr = "Primary";
-  };
-  if settings.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-FullAuto";
-  };
-  if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-SemiAuto";
-  };
-  if this.m_weaponRecord.TagsContains(n"InstantCharge") || this.m_weaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-SemiAuto";
-  };
-  switch triggerType {
-    case gamedataTriggerMode.FullAuto: return n"Mod-TriggerModeCtrl-FullAuto";
-    case gamedataTriggerMode.Charge: return n"Mod-TriggerModeCtrl-Charge";
-    case gamedataTriggerMode.Burst: return n"Mod-TriggerModeCtrl-Burst";
-  };
-  return n"Mod-TriggerModeCtrl-SemiAuto";
-}
-
-@addMethod(WeaponRosterGameController)
-private final func GetCurrentTriggerModeKey() -> CName {
-  let secondaryTrigger: Bool = StatusEffectSystem.ObjectHasStatusEffect(this.m_player, t"BaseStatusEffect.PlayerSecondaryTrigger");
-  let primaryKey: CName = this.GetTriggerModeKey(false);
-  let secondaryKey: CName = this.GetTriggerModeKey(true);
-  if Equals(primaryKey, secondaryKey) || this.m_weaponRecord.TagsContains(n"SimpleTriggerLabels") {
-    return secondaryTrigger ? n"Mod-TriggerModeCtrl-Secondary" : n"Mod-TriggerModeCtrl-Primary";
-  };
-  return secondaryTrigger ? secondaryKey : primaryKey;
-}
-
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnWeaponDataChanged(value: Variant) -> Bool {
-  let result: Bool = wrappedMethod(value);
-  this.activeTrigger.SetText(GetLocalizedTextByKey(this.GetCurrentTriggerModeKey()));
-  return result;
 }
 
