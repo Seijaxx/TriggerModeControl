@@ -169,9 +169,6 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
 @addField(WeaponRosterGameController)
 let activeTrigger: ref<inkText>;
 
-@addField(WeaponRosterGameController)
-let projectE3HUD: Bool;
-
 @wrapMethod(WeaponRosterGameController)
 protected cb func OnInitialize() -> Bool {
   this.activeTrigger = new inkText();
@@ -556,4 +553,5 @@ public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionS
   };
   return this.CreateStim(ctx, this.silentStimType, position, silentStimRadius);
 }
+
 
