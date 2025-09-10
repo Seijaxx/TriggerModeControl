@@ -169,6 +169,7 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
 @addField(WeaponRosterGameController)
 let activeTrigger: ref<inkText>;
 
+// create widget and manage roster children
 @wrapMethod(WeaponRosterGameController)
 protected cb func OnInitialize() -> Bool {
   this.activeTrigger = new inkText();
@@ -176,7 +177,7 @@ protected cb func OnInitialize() -> Bool {
   this.activeTrigger.SetFitToContent(true);
   this.activeTrigger.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
   this.activeTrigger.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
-  this.activeTrigger.SetAnchorPoint(0.0, 0.0);
+  //this.activeTrigger.SetAnchorPoint(0.0, 0.0);
   this.activeTrigger.SetAnchor(inkEAnchor.BottomLeft);
   this.activeTrigger.SetHAlign(inkEHorizontalAlign.Left);
   this.activeTrigger.SetContentHAlign(inkEHorizontalAlign.Left);
@@ -238,17 +239,12 @@ protected final func SetTriggerIndicatorVisibility() -> Void {
   this.activeTrigger.SetOpacity(0.0);
 }
 
+// trigger show/hide updates
 @wrapMethod(WeaponRosterGameController)
-private final func SetRosterSlotData() -> Void {
-  wrappedMethod();
+protected cb func OnUpdate(dT: Float) -> Bool {
+  let result: Bool = wrappedMethod(dT);
   this.SetTriggerIndicatorVisibility();
-}
-
-@if(ModuleExists("LimitedHudCommon"))
-@wrapMethod(WeaponRosterGameController)
-protected cb func OnLHUDEvent(evt: ref<LHUDEvent>) -> Void {
-  wrappedMethod(evt);
-  this.SetTriggerIndicatorVisibility();
+  return result;
 }
 
 @wrapMethod(WeaponRosterGameController)
@@ -259,7 +255,15 @@ protected cb func OnPSMWeaponStateChanged(value: Int32) -> Bool {
   };
   return result;
 }
+/*
+@wrapMethod(WeaponRosterGameController)
+private final func SetRosterSlotData() -> Void {
+  wrappedMethod();
+  this.SetTriggerIndicatorVisibility();
+}
+*/
 
+// select and apply current label
 @addMethod(WeaponRosterGameController)
 private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
   let triggerStr: String;
@@ -519,12 +523,8 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
 protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
   let result: Bool = wrappedMethod(game, weaponObject, state);
   if result {
-    let player: wref<GameObject> = GameInstance.GetPlayerSystem(game).GetLocalPlayerControlledGameObject();
-    if IsDefined(player) {
-      if ((weaponObject.WeaponHasTag(n"ForceAutoPrimary") || weaponObject.WeaponHasTag(n"InstantChargePrimary")) && !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger"))
-      || ((weaponObject.WeaponHasTag(n"ForceAutoSecondary") || weaponObject.WeaponHasTag(n"InstantChargeSecondary")) && StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
-        return false;
-      };
+    if weaponObject.WeaponHasTagOnTrigger(n"ForceAuto") || weaponObject.WeaponHasTagOnTrigger(n"InstantCharge") {
+      return false;
     };
   };
   return result;
@@ -553,5 +553,4 @@ public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionS
   };
   return this.CreateStim(ctx, this.silentStimType, position, silentStimRadius);
 }
-
 
