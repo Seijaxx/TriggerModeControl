@@ -38,21 +38,35 @@ protected cb func OnInitialize() -> Bool {
   this.activeTrigger.SetLetterCase(textLetterCase.UpperCase);
   this.activeTrigger.SetVisible(true);
   this.activeTrigger.SetOpacity(0.0);
-  let parent: ref<inkCompoundWidget> = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/weapon_wrapper/new_ammo_wrapper/selective_fire") as inkCompoundWidget);          // Project E3 - HUD
+  let parent: ref<inkCompoundWidget> = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/weapon_wrapper/new_ammo_wrapper/selective_fire") as inkCompoundWidget);        // Project E3 - HUD
   if IsDefined(parent) {
+    this.projE3HUD = true;
     parent.RemoveAllChildren();
     this.activeTrigger.BindProperty(n"tintColor", n"MainColors.Red");
     this.activeTrigger.SetMargin(95.0, -10.0, 0.0, 0.0);
     this.activeTrigger.SetFontStyle(n"Bold");
     this.activeTrigger.SetFontSize(41);
-    this.projE3HUD = true;
   } else {
-    parent = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter") as inkCompoundWidget);
+    this.projE3HUD = false;
+    // handle smartlink indicator and shared translation
+    let translation: Vector2 = new Vector2(0.0, -14.0);
+    this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter").SetTranslation(translation);
+    inkWidgetRef.Reparent(this.m_smartLinkFirmwareOffline, this.GetRootCompoundWidget());
+    inkWidgetRef.Reparent(this.m_smartLinkFirmwareOnline, this.GetRootCompoundWidget());
+    inkWidgetRef.SetAnchor(this.m_smartLinkFirmwareOffline, inkEAnchor.BottomRight);
+    inkWidgetRef.SetAnchor(this.m_smartLinkFirmwareOnline, inkEAnchor.BottomRight);
+    inkWidgetRef.SetMargin(this.m_smartLinkFirmwareOffline, 0.0, 0.0, 355.0, 0.0);
+    inkWidgetRef.SetMargin(this.m_smartLinkFirmwareOnline, 0.0, 0.0, 340.0, 0.0);
+    inkWidgetRef.SetTranslation(this.m_smartLinkFirmwareOffline, translation);
+    inkWidgetRef.SetTranslation(this.m_smartLinkFirmwareOnline, translation);
+    this.GetRootCompoundWidget().GetWidget(n"smartlink_OFF/fluffOff").BindProperty(n"tintColor", n"MainColors.Red");
+    // trigger indicator
+    parent = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/additional_info") as inkCompoundWidget);
+    parent.SetChildOrder(inkEChildOrder.Backward);
     this.activeTrigger.BindProperty(n"tintColor", n"MainColors.ActiveBlue");
-    this.activeTrigger.SetMargin(13.0, -30.0, 0.0, 0.0);
+    this.activeTrigger.SetMargin(10.0, -15.0, 10.0, 0.0);
     this.activeTrigger.SetFontStyle(n"Medium");
     this.activeTrigger.SetFontSize(32);
-    this.projE3HUD = false;
   };
   this.activeTrigger.Reparent(parent);
   return wrappedMethod();
@@ -62,6 +76,15 @@ protected cb func OnInitialize() -> Bool {
 protected cb func OnUninitialize() -> Bool {
   this.activeTrigger = null;
   return wrappedMethod();
+}
+
+@wrapMethod(WeaponRosterGameController)
+private final func Fold() -> Void {
+  wrappedMethod();
+  if !this.projE3HUD {
+    inkWidgetRef.SetVisible(this.m_smartLinkFirmwareOffline, false);
+    inkWidgetRef.SetVisible(this.m_smartLinkFirmwareOnline, false);
+  };
 }
 
 // select and apply current label
@@ -140,7 +163,7 @@ protected final func SetTriggerIndicatorVisibility() -> Void {
     this.activeTrigger.SetOpacity(0.0);
     return;
   };
-  if this.projE3HUD || this.labelOverride {
+  if this.labelOverride {
     this.activeTrigger.SetOpacity(this.IsWidgetVisible() ? 1.0 : 0.0);
     return;
   };
