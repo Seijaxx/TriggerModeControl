@@ -9,13 +9,13 @@ import LimitedHudConfig.WeaponRosterModuleConfig
 
 
 @addField(WeaponRosterGameController)
+let settingsTMC: ref<TMCSettings>;
+
+@addField(WeaponRosterGameController)
 let activeTrigger: ref<inkText>;
 
 @addField(WeaponRosterGameController)
 let doubledTrigger: Bool;
-
-@addField(WeaponRosterGameController)
-let labelOverride: Bool;
 
 @addField(WeaponRosterGameController)
 let projE3HUD: Bool;
@@ -23,6 +23,7 @@ let projE3HUD: Bool;
 // create and reparent widget
 @wrapMethod(WeaponRosterGameController)
 protected cb func OnInitialize() -> Bool {
+  this.settingsTMC = TMCSettings.GetSettings();
   this.activeTrigger = new inkText();
   this.activeTrigger.SetName(n"trigger_indicator");
   this.activeTrigger.SetFitToContent(true);
@@ -74,6 +75,7 @@ protected cb func OnInitialize() -> Bool {
 
 @wrapMethod(WeaponRosterGameController)
 protected cb func OnUninitialize() -> Bool {
+  this.settingsTMC = null;
   this.activeTrigger = null;
   return wrappedMethod();
 }
@@ -92,7 +94,6 @@ private final func Fold() -> Void {
 private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
   let triggerStr: String;
   let triggerType: gamedataTriggerMode;
-  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
   if secondaryTrigger {
     triggerType = this.m_weaponRecord.SecondaryTriggerMode().Type();
     triggerStr = "Secondary";
@@ -100,7 +101,7 @@ private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
     triggerType = this.m_weaponRecord.PrimaryTriggerMode().Type();
     triggerStr = "Primary";
   };
-  if settings.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
+  if this.settingsTMC.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
     return n"Mod-TriggerModeCtrl-FullAuto";
   };
   if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
@@ -137,13 +138,6 @@ protected cb func OnWeaponDataChanged(value: Variant) -> Bool {
 }
 
 // show/hide updates
-@wrapMethod(WeaponRosterGameController)
-private final func SetRosterSlotData() -> Void {
-  wrappedMethod();
-  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
-  this.labelOverride = settings.overrideWidget;
-}
-
 @if(!ModuleExists("LimitedHudCommon"))
 @addMethod(WeaponRosterGameController)
 protected final func IsWidgetVisible() -> Bool {
@@ -163,7 +157,7 @@ protected final func SetTriggerIndicatorVisibility() -> Void {
     this.activeTrigger.SetOpacity(0.0);
     return;
   };
-  if this.labelOverride {
+  if this.settingsTMC.overrideWidget {
     this.activeTrigger.SetOpacity(this.IsWidgetVisible() ? 1.0 : 0.0);
     return;
   };
