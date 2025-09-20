@@ -6,17 +6,6 @@ import TriggerModeControl.Config.*
 // Weapon helpers
 
 @addMethod(WeaponObject)
-protected final func HasMultipleValidTriggers() -> Bool {
-  let triggerModesArray: array<wref<TriggerMode_Record>>;
-  this.GetWeaponRecord().TriggerModes(triggerModesArray);
-  if ArraySize(triggerModesArray) > 1 {
-    let secondaryTrigger: wref<TriggerMode_Record> = this.GetWeaponRecord().SecondaryTriggerMode();
-    return IsDefined(secondaryTrigger);
-  };
-  return false;
-}
-
-@addMethod(WeaponObject)
 protected final func WeaponHasTagOnTrigger(tag: CName) -> Bool {
   if this.GetOwner().IsPlayer() {
     if this.WeaponHasTag(tag) {
@@ -32,23 +21,30 @@ protected final func WeaponHasTagOnTrigger(tag: CName) -> Bool {
 }
 
 @addMethod(WeaponItem_Record)
-protected final func CanManuallySwapTriggers() -> Bool {
-  if this.TagsContains(n"ManualTriggerSwap") {
-    return true;
-  };
-  let hasMultipleTriggers: Bool = false;
+protected final func HasMultipleValidTriggers() -> Bool {
   let triggerModesArray: array<wref<TriggerMode_Record>>;
   this.TriggerModes(triggerModesArray);
   if ArraySize(triggerModesArray) > 1 {
     let secondaryTrigger: wref<TriggerMode_Record> = this.SecondaryTriggerMode();
-    hasMultipleTriggers = IsDefined(secondaryTrigger);
+    return IsDefined(secondaryTrigger);
   };
-  if hasMultipleTriggers {
-    let settings: wref<TMCSettings> = TMCSettings.GetSettings();
-    let isTech: Bool = Equals(this.Evolution().Type(), gamedataWeaponEvolution.Tech);
-    if (settings.overrideOthers && !isTech) || (settings.overrideTech && isTech) {
-      return true;
-    };
+  return false;
+}
+
+@addMethod(WeaponItem_Record)
+protected final func CanManuallySwapTriggers() -> Bool {
+  if !this.HasMultipleValidTriggers() {
+    return false;
+  };
+  if this.TagsContains(n"ManualTriggerSwap") {
+    return true;
+  };
+  let settings: wref<TMCSettings> = TMCSettings.GetSettings();
+  let isTech: Bool = Equals(this.Evolution().Type(), gamedataWeaponEvolution.Tech);
+  if isTech {
+    return settings.overrideTech;
+  } else {
+    return settings.overrideOthers;
   };
   return false;
 }
@@ -102,7 +98,7 @@ protected final func OnAttach(const stateContext: ref<StateContext>, const scrip
       .AddTarget(InputTarget.Key(configKeybinds.SwapFiremode_Pad));
   };
   let weaponObject: ref<WeaponObject> = scriptInterface.owner as WeaponObject;
-  this.EnableOnEnterCondition(weaponObject.HasMultipleValidTriggers());
+  this.EnableOnEnterCondition(weaponObject.GetWeaponRecord().HasMultipleValidTriggers());
 }
 
 @addMethod(CycleTriggerModeDecisions)
@@ -399,3 +395,18 @@ public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionS
   return this.CreateStim(ctx, this.silentStimType, position, silentStimRadius);
 }
 
+// hide "Charged Shot" hint when charge is instant
+@wrapMethod(DefaultTransition)
+public final static func IsChargeRangedWeapon(const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
+  let result: Bool = wrappedMethod(scriptInterface);
+  if result {
+    let weaponObject: ref<WeaponObject> = GameInstance.GetTransactionSystem(scriptInterface.owner.GetGame()).GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
+    if weaponObject.WeaponHasTagOnTrigger(n"InstantCharge") {
+      return false;
+    };
+    if Equals(scriptInterface.GetStatsSystem().GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.ChargeTime), 0.00) {
+      return false;
+    };
+  };
+  return result;
+}

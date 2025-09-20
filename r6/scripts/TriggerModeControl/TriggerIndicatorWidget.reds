@@ -20,6 +20,7 @@ let doubledTrigger: Bool;
 @addField(WeaponRosterGameController)
 let projE3HUD: Bool;
 
+
 // create and reparent widget
 @wrapMethod(WeaponRosterGameController)
 protected cb func OnInitialize() -> Bool {
@@ -89,39 +90,55 @@ private final func Fold() -> Void {
   };
 }
 
+
 // select and apply current label
 @addMethod(WeaponRosterGameController)
 private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
-  let triggerStr: String;
   let triggerType: gamedataTriggerMode;
+  let triggerStr: String;
+  let isBurst: Bool;
+  let isCharge: Bool;
+  let statsSystem: wref<StatsSystem> = GameInstance.GetStatsSystem(this.m_player.GetGame());
+  let statsObjectID: StatsObjectID = Cast<StatsObjectID>(this.m_player.GetEntityID());
   if secondaryTrigger {
     triggerType = this.m_weaponRecord.SecondaryTriggerMode().Type();
     triggerStr = "Secondary";
+    isBurst = statsSystem.GetStatValue(statsObjectID, gamedataStatType.NumShotsInBurstSecondary) > 1.0;
   } else {
     triggerType = this.m_weaponRecord.PrimaryTriggerMode().Type();
     triggerStr = "Primary";
+    isBurst = statsSystem.GetStatValue(statsObjectID, gamedataStatType.NumShotsInBurst) > 1.0;
   };
-  if this.settingsTMC.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-FullAuto";
+  isCharge = this.IsTriggerCharge(triggerType, triggerStr, statsSystem.GetStatValue(statsObjectID, gamedataStatType.ChargeTime));
+  if statsSystem.GetStatValue(statsObjectID, gamedataStatType.MagazineCapacity) < 2.0 {
+    return isCharge ? n"Mod-TriggerModeCtrl-Charge" : n"Mod-TriggerModeCtrl-SemiAuto";
   };
-  if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-SemiAuto";
+  if this.IsTriggerFullAuto(triggerType, triggerStr) {
+    if isCharge {
+      if this.settingsTMC.overrideHoldCharge && statsSystem.GetStatValue(statsObjectID, gamedataStatType.CanControlFullyChargedWeapon) > 0.0 {  // full-auto chain is interrupted by charge hold
+        return n"Mod-TriggerModeCtrl-Charge";
+      };
+      return n"Mod-TriggerModeCtrl-AutoCharge";
+    };
+    if statsSystem.GetStatValue(statsObjectID, gamedataStatType.CycleTime) > 2.5 {
+      return isBurst ? n"Mod-TriggerModeCtrl-Burst" : n"Mod-TriggerModeCtrl-SemiAuto";
+    };
+    return isBurst ? n"Mod-TriggerModeCtrl-AutoBurst" : n"Mod-TriggerModeCtrl-FullAuto";
   };
-  if this.m_weaponRecord.TagsContains(n"InstantCharge") || this.m_weaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) {
-    return n"Mod-TriggerModeCtrl-SemiAuto";
+  if isCharge {
+    return n"Mod-TriggerModeCtrl-Charge";
   };
-  switch triggerType {
-    case gamedataTriggerMode.FullAuto: return n"Mod-TriggerModeCtrl-FullAuto";
-    case gamedataTriggerMode.Charge: return n"Mod-TriggerModeCtrl-Charge";
-    case gamedataTriggerMode.Burst: return n"Mod-TriggerModeCtrl-Burst";
-  };
-  return n"Mod-TriggerModeCtrl-SemiAuto";
+  return isBurst ? n"Mod-TriggerModeCtrl-Burst" : n"Mod-TriggerModeCtrl-SemiAuto";
 }
 
 @addMethod(WeaponRosterGameController)
-private final func GetCurrentTriggerModeKey() -> CName {
+public final func GetCurrentTriggerModeKey() -> CName {
   let secondaryTrigger: Bool = StatusEffectSystem.ObjectHasStatusEffect(this.m_player, t"BaseStatusEffect.PlayerSecondaryTrigger");
   let primaryKey: CName = this.GetTriggerModeKey(false);
+  if !this.m_weaponRecord.HasMultipleValidTriggers() {
+    this.doubledTrigger = false;
+    return primaryKey;
+  };
   let secondaryKey: CName = this.GetTriggerModeKey(true);
   this.doubledTrigger = Equals(primaryKey, secondaryKey);
   if this.doubledTrigger || this.m_weaponRecord.TagsContains(n"SimpleTriggerLabels") {
@@ -137,21 +154,22 @@ protected cb func OnWeaponDataChanged(value: Variant) -> Bool {
   return result;
 }
 
+
 // show/hide updates
 @if(!ModuleExists("LimitedHudCommon"))
 @addMethod(WeaponRosterGameController)
-protected final func IsWidgetVisible() -> Bool {
+public func IsWidgetVisible() -> Bool {
   return IsDefined(this.m_player) && this.m_isUnholstered;
 }
 
 @if(ModuleExists("LimitedHudCommon"))
 @addMethod(WeaponRosterGameController)
-protected final func IsWidgetVisible() -> Bool {
-  return this.lhudConfig.IsEnabled ? this.lhud_isVisibleNow : this.lhud_isWeaponUnsheathed;
+public func IsWidgetVisible() -> Bool {
+  return this.lhudConfig.IsEnabled ? this.lhud_isVisibleNow : this.m_isUnholstered;
 }
 
 @addMethod(WeaponRosterGameController)
-protected final func SetTriggerIndicatorVisibility() -> Void {
+private final func SetTriggerIndicatorVisibility() -> Void {
   let primaryTrigger: wref<TriggerMode_Record> = this.m_weaponRecord.PrimaryTriggerMode();
   if !IsDefined(primaryTrigger) || this.m_inWeaponizedVehicle {
     this.activeTrigger.SetOpacity(0.0);
@@ -179,3 +197,29 @@ protected cb func OnUpdate(dT: Float) -> Bool {
   return result;
 }
 
+
+// helper methods
+@addMethod(WeaponRosterGameController)
+private final func IsTriggerFullAuto(triggerType: gamedataTriggerMode, triggerStr: script_ref<String>) -> Bool {
+  if Equals(triggerType, gamedataTriggerMode.FullAuto) {
+    if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
+      return false;
+    };
+    return true;
+  };
+  if this.settingsTMC.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
+    return true;
+  };
+  return false;
+}
+
+@addMethod(WeaponRosterGameController)
+private final func IsTriggerCharge(triggerType: gamedataTriggerMode, triggerStr: script_ref<String>, chargeTime: Float) -> Bool {
+  if Equals(triggerType, gamedataTriggerMode.Charge) {
+    if this.m_weaponRecord.TagsContains(n"InstantCharge") || this.m_weaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) || Equals(chargeTime, 0.00) {
+      return false;
+    };
+    return true;
+  };
+  return false;
+}
