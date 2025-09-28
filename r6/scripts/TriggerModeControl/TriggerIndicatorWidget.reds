@@ -51,7 +51,7 @@ protected cb func OnInitialize() -> Bool {
   } else {
     this.projE3HUD = false;
     // handle smartlink indicator and shared translation
-    let translation: Vector2 = new Vector2(0.0, -14.0);
+    let translation: Vector2 = Vector2(0.0, -14.0);
     this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter").SetTranslation(translation);
     inkWidgetRef.Reparent(this.m_smartLinkFirmwareOffline, this.GetRootCompoundWidget());
     inkWidgetRef.Reparent(this.m_smartLinkFirmwareOnline, this.GetRootCompoundWidget());
@@ -222,4 +222,5 @@ private final func IsTriggerCharge(triggerType: gamedataTriggerMode, triggerStr:
     return true;
   };
   return false;
+
 }
