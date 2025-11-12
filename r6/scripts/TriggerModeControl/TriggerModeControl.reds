@@ -109,8 +109,13 @@ protected final func OnDetach(const stateContext: ref<StateContext>, const scrip
 @addMethod(CycleTriggerModeDecisions)
 private cb func OnKeyInput(evt: ref<KeyInputEvent>) {
   if Equals(evt.GetAction(), EInputAction.IACT_Press) {
-    this.manualSwap = true;
+    this.ApplyManualSwap();
   };
+}
+
+@addMethod(CycleTriggerModeDecisions)
+public final func ApplyManualSwap() -> Void {
+  this.manualSwap = true;
 }
 
 // handle enter conditions

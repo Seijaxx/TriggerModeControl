@@ -28,15 +28,8 @@ protected cb func OnInitialize() -> Bool {
   this.activeTrigger = new inkText();
   this.activeTrigger.SetName(n"trigger_indicator");
   this.activeTrigger.SetFitToContent(true);
-  this.activeTrigger.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
   this.activeTrigger.SetStyle(r"base\\gameplay\\gui\\common\\main_colors.inkstyle");
-  this.activeTrigger.SetAnchor(inkEAnchor.TopLeft);
-  this.activeTrigger.SetHAlign(inkEHorizontalAlign.Left);
-  this.activeTrigger.SetContentHAlign(inkEHorizontalAlign.Left);
-  this.activeTrigger.SetHorizontalAlignment(textHorizontalAlignment.Left);
-  this.activeTrigger.SetVAlign(inkEVerticalAlign.Top);
-  this.activeTrigger.SetContentVAlign(inkEVerticalAlign.Top);
-  this.activeTrigger.SetVerticalAlignment(textVerticalAlignment.Top);
+  this.activeTrigger.SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
   this.activeTrigger.SetLetterCase(textLetterCase.UpperCase);
   this.activeTrigger.SetVisible(true);
   this.activeTrigger.SetOpacity(0.0);
@@ -222,5 +215,4 @@ private final func IsTriggerCharge(triggerType: gamedataTriggerMode, triggerStr:
     return true;
   };
   return false;
-
 }
