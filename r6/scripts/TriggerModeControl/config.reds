@@ -25,6 +25,13 @@ public class TMCKeybinds {
 public class TMCSettings extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Trigger Control")
+  @runtimeProperty("ModSettings.displayName", "Mod-TriggerModeCtrl-OverrideWidget")
+  @runtimeProperty("ModSettings.description", "Mod-TriggerModeCtrl-OverrideWidget_desc")
+  @runtimeProperty("ModSettings.category", "Mod-TriggerModeCtrl-Overrides")
+  @runtimeProperty("ModSettings.category.order", "1")
+  let overrideWidget : Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Trigger Control")
   @runtimeProperty("ModSettings.displayName", "Mod-TriggerModeCtrl-OverrideTech")
   @runtimeProperty("ModSettings.description", "Mod-TriggerModeCtrl-OverrideTech_desc")
   @runtimeProperty("ModSettings.category", "Mod-TriggerModeCtrl-Overrides")
