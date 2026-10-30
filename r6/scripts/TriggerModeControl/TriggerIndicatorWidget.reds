@@ -57,7 +57,7 @@ protected cb func OnInitialize() -> Bool {
     this.GetRootCompoundWidget().GetWidget(n"smartlink_OFF/fluffOff").BindProperty(n"tintColor", n"MainColors.Red");
     // trigger indicator
     parent = (this.GetRootCompoundWidget().GetWidget(n"weapon_on_foot/ammo_counter/additional_info") as inkCompoundWidget);
-    parent.SetChildOrder(inkEChildOrder.Backward);
+    //parent.SetChildOrder(inkEChildOrder.Backward);
     this.activeTrigger.BindProperty(n"tintColor", n"MainColors.ActiveBlue");
     this.activeTrigger.SetMargin(10.0, -15.0, 10.0, 0.0);
     this.activeTrigger.SetFontStyle(n"Medium");
@@ -94,11 +94,11 @@ private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
   let statsSystem: wref<StatsSystem> = GameInstance.GetStatsSystem(this.m_player.GetGame());
   let statsObjectID: StatsObjectID = Cast<StatsObjectID>(this.m_player.GetEntityID());
   if secondaryTrigger {
-    triggerType = this.m_weaponRecord.SecondaryTriggerMode().Type();
+    triggerType = this.m_rightWeaponRecord.SecondaryTriggerMode().Type();
     triggerStr = "Secondary";
     isBurst = statsSystem.GetStatValue(statsObjectID, gamedataStatType.NumShotsInBurstSecondary) > 1.0;
   } else {
-    triggerType = this.m_weaponRecord.PrimaryTriggerMode().Type();
+    triggerType = this.m_rightWeaponRecord.PrimaryTriggerMode().Type();
     triggerStr = "Primary";
     isBurst = statsSystem.GetStatValue(statsObjectID, gamedataStatType.NumShotsInBurst) > 1.0;
   };
@@ -128,13 +128,13 @@ private final func GetTriggerModeKey(secondaryTrigger: Bool) -> CName {
 public final func GetCurrentTriggerModeKey() -> CName {
   let secondaryTrigger: Bool = StatusEffectSystem.ObjectHasStatusEffect(this.m_player, t"BaseStatusEffect.PlayerSecondaryTrigger");
   let primaryKey: CName = this.GetTriggerModeKey(false);
-  if !this.m_weaponRecord.HasMultipleValidTriggers() {
+  if !this.m_rightWeaponRecord.HasMultipleValidTriggers() {
     this.doubledTrigger = false;
     return primaryKey;
   };
   let secondaryKey: CName = this.GetTriggerModeKey(true);
   this.doubledTrigger = Equals(primaryKey, secondaryKey);
-  if this.doubledTrigger || this.m_weaponRecord.TagsContains(n"SimpleTriggerLabels") {
+  if this.doubledTrigger || this.m_rightWeaponRecord.TagsContains(n"SimpleTriggerLabels") {
     return secondaryTrigger ? n"Mod-TriggerModeCtrl-Secondary" : n"Mod-TriggerModeCtrl-Primary";
   };
   return secondaryTrigger ? secondaryKey : primaryKey;
@@ -163,7 +163,7 @@ public func IsWidgetVisible() -> Bool {
 
 @addMethod(WeaponRosterGameController)
 private final func SetTriggerIndicatorVisibility() -> Void {
-  let primaryTrigger: wref<TriggerMode_Record> = this.m_weaponRecord.PrimaryTriggerMode();
+  let primaryTrigger: wref<TriggerMode_Record> = this.m_rightWeaponRecord.PrimaryTriggerMode();
   if !IsDefined(primaryTrigger) || this.m_inWeaponizedVehicle {
     this.activeTrigger.SetOpacity(0.0);
     return;
@@ -172,11 +172,11 @@ private final func SetTriggerIndicatorVisibility() -> Void {
     this.activeTrigger.SetOpacity(this.IsWidgetVisible() ? 1.0 : 0.0);
     return;
   };
-  if this.doubledTrigger && this.m_weaponRecord.TagsContains(n"AimingBoundAttacks"){
+  if this.doubledTrigger && this.m_rightWeaponRecord.TagsContains(n"AimingBoundAttacks"){
     this.activeTrigger.SetOpacity(0.0);
     return;
   };
-  if this.m_weaponRecord.CanManuallySwapTriggers() && this.IsWidgetVisible() {
+  if StatusEffectSystem.ObjectHasStatusEffect(this.m_player, t"BaseStatusEffect.ManualTriggerSwapEnabled") && this.IsWidgetVisible() {
     this.activeTrigger.SetOpacity(1.0);
     return;
   };
@@ -194,13 +194,16 @@ protected cb func OnUpdate(dT: Float) -> Bool {
 // helper methods
 @addMethod(WeaponRosterGameController)
 private final func IsTriggerFullAuto(triggerType: gamedataTriggerMode, triggerStr: script_ref<String>) -> Bool {
+  if GameObject.IsDualWielding(this.m_player) {
+    return true;
+  };
   if Equals(triggerType, gamedataTriggerMode.FullAuto) {
-    if this.m_weaponRecord.TagsContains(n"RemoveAuto") || this.m_weaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
+    if this.m_rightWeaponRecord.TagsContains(n"RemoveAuto") || this.m_rightWeaponRecord.TagsContains(StringToName("RemoveAuto" + triggerStr)) {
       return false;
     };
     return true;
   };
-  if this.settingsTMC.overrideAuto || this.m_weaponRecord.TagsContains(n"ForceAuto") || this.m_weaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
+  if this.settingsTMC.overrideAuto || this.m_rightWeaponRecord.TagsContains(n"ForceAuto") || this.m_rightWeaponRecord.TagsContains(StringToName("ForceAuto" + triggerStr)) {
     return true;
   };
   return false;
@@ -209,7 +212,7 @@ private final func IsTriggerFullAuto(triggerType: gamedataTriggerMode, triggerSt
 @addMethod(WeaponRosterGameController)
 private final func IsTriggerCharge(triggerType: gamedataTriggerMode, triggerStr: script_ref<String>, chargeTime: Float) -> Bool {
   if Equals(triggerType, gamedataTriggerMode.Charge) {
-    if this.m_weaponRecord.TagsContains(n"InstantCharge") || this.m_weaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) || Equals(chargeTime, 0.00) {
+    if this.m_rightWeaponRecord.TagsContains(n"InstantCharge") || this.m_rightWeaponRecord.TagsContains(StringToName("InstantCharge" + triggerStr)) || Equals(chargeTime, 0.00) {
       return false;
     };
     return true;

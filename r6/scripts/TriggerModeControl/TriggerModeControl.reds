@@ -1,7 +1,6 @@
 module TriggerModeControl
 import TriggerModeControl.Config.*
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Weapon helpers
 
@@ -55,17 +54,19 @@ protected final func CanManuallySwapTriggers() -> Bool {
 
 // check if weapon is tagged and handle manual control partecipation
 @wrapMethod(EquipmentBaseTransition)
-protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID) -> Void {
-  wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item);
-  let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
-  if weaponObject.GetWeaponRecord().CanManuallySwapTriggers() {
-    stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
-    StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.ManualTriggerSwapEnabled");
-    if !weaponObject.WeaponHasTag(n"ManualTriggerSwap") {
-      stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlOverride", true, true);
+protected final const func HandleWeaponEquip(scriptInterface: ref<StateGameScriptInterface>, stateContext: ref<StateContext>, stateMachineInstanceData: StateMachineInstanceData, item: ItemID, isLeftWeapon: Bool) -> Void {
+  wrappedMethod(scriptInterface, stateContext, stateMachineInstanceData, item, isLeftWeapon);
+  if !isLeftWeapon {
+    let weaponObject: ref<WeaponObject> = scriptInterface.GetTransactionSystem().GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
+    if weaponObject.GetWeaponRecord().CanManuallySwapTriggers() {
+      stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlApplied", true, true);
+      StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.ManualTriggerSwapEnabled");
+      if !weaponObject.WeaponHasTag(n"ManualTriggerSwap") {
+        stateContext.SetPermanentBoolParameter(n"isManualTriggerCtrlOverride", true, true);
+      };
     };
+    stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", false, true);
   };
-  stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", false, true);
 }
 
 @wrapMethod(UnequipCycleEvents)
@@ -79,6 +80,49 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
     StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.ManualTriggerSwapEnabled");
   };
   wrappedMethod(stateContext, scriptInterface);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// InputContextTransitionEvents
+
+@addMethod(InputContextTransitionEvents)
+private final func AddTriggerModeCtrlInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, group: CName) -> Void {
+  if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {
+  this.ShowInputHint(scriptInterface, n"TriggerSwap", group, GetLocalizedTextByKey(n"Mod-TriggerModeCtrl-TriggerSwap"), inkInputHintHoldIndicationType.FromInputConfig, true, 1);
+  };
+}
+
+// add input hint
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowRangedInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
+  let psmBodyCarrying: gamePSMBodyCarrying = IntEnum<gamePSMBodyCarrying>(scriptInterface.localBlackboard.GetInt(GetAllBlackboardDefs().PlayerStateMachine.BodyCarrying));
+  if Equals(psmBodyCarrying, gamePSMBodyCarrying.Carry) {
+    this.ShowBodyCarryInputHints(stateContext, scriptInterface);
+  };
+}
+
+// Aiming state: update input hint
+@wrapMethod(AimingContextEvents)
+protected final func OnUpdate(timeDelta: Float, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(timeDelta, stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"Ranged");
+}
+
+// Vehicle Combat: add input hint
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDriverCombatInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombat");
+}
+
+// Vehicle Combat: add input hint
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDriverCombatTPPInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(stateContext, scriptInterface);
+  this.AddTriggerModeCtrlInputHints(stateContext, scriptInterface, n"VehicleDriverCombatTPP");
 }
 
 
@@ -97,7 +141,7 @@ protected final func OnAttach(const stateContext: ref<StateContext>, const scrip
       .AddTarget(InputTarget.Key(configKeybinds.SwapFiremode))
       .AddTarget(InputTarget.Key(configKeybinds.SwapFiremode_Pad));
   };
-  let weaponObject: ref<WeaponObject> = scriptInterface.owner as WeaponObject;
+  let weaponObject: ref<WeaponObject> = GameInstance.GetTransactionSystem(scriptInterface.executionOwner.GetGame()).GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
   this.EnableOnEnterCondition(weaponObject.GetWeaponRecord().HasMultipleValidTriggers());
 }
 
@@ -134,27 +178,36 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
 
 @wrapMethod(CycleTriggerModeEvents)
 protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
-  wrappedMethod(stateContext, scriptInterface);
   let weaponObject: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
-  switch stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
-    case true:
-      stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", false, true);
-      StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
-      break;
-    default:
-      stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", true, true);
-      StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
-  };
-  if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {                                                          // manual swap
-    this.SwitchTriggerMode(stateContext, scriptInterface);
-    GameObject.PlaySoundEvent(scriptInterface.executionOwner, n"w_gun_pistol_power_unity_trigger");                                // play sound
-  };
-  if weaponObject.WeaponHasTag(n"ResetChargeOnSwap") {
-    let statPoolsSystem: ref<StatPoolsSystem> = scriptInterface.GetStatPoolsSystem();
-    if statPoolsSystem.HasActiveStatPool(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge) {
-      statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, 0.0, scriptInterface.executionOwner);
+  if !weaponObject.IsEquippedInLeftHand() {
+    switch stateContext.GetBoolParameter(n"isSecondaryTriggerMode", true) {
+      case true:
+        stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", false, true);
+        StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+        break;
+      default:
+        stateContext.SetPermanentBoolParameter(n"isSecondaryTriggerMode", true, true);
+        StatusEffectHelper.ApplyStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger");
+    };
+    if weaponObject.WeaponHasTag(n"ResetChargeOnSwap") {
+      let statPoolsSystem: ref<StatPoolsSystem> = scriptInterface.GetStatPoolsSystem();
+      if statPoolsSystem.HasActiveStatPool(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge) {
+        statPoolsSystem.RequestSettingStatPoolValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatPoolType.WeaponCharge, 0.0, scriptInterface.executionOwner);
+      };
+    };
+    if stateContext.GetBoolParameter(n"isManualTriggerCtrlApplied", true) {                                                          // manual swap
+      PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);               // refresh button hints
+      GameObject.PlaySoundEvent(scriptInterface.executionOwner, n"w_gun_pistol_power_unity_trigger");                                // play sound
     };
   };
+  wrappedMethod(stateContext, scriptInterface);
+}
+
+// refresh button hints
+@wrapMethod(ReadyEvents)
+protected final func OnUpdate(timeDelta: Float, stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  wrappedMethod(timeDelta, stateContext, scriptInterface);
+  PlayerGameplayRestrictions.PushForceRefreshInputHintsEventToPSM(scriptInterface.executionOwner as PlayerPuppet);                 // refresh button hints
 }
 
 
@@ -162,7 +215,7 @@ protected final func OnEnter(stateContext: ref<StateContext>, scriptInterface: r
 // WeaponTransition
 
 // grab correct stats
-@replaceMethod(WeaponTransition)
+@wrapMethod(WeaponTransition)
 protected final const func IsPrimaryTriggerModeActive(const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let weapon: ref<WeaponObject> = this.GetWeaponObject(scriptInterface);
   if !StatusEffectSystem.ObjectHasStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PlayerSecondaryTrigger") {
@@ -208,6 +261,9 @@ protected final func GetDesiredAttackRecord(stateContext: ref<StateContext>, scr
   
   if weaponObject.WeaponHasTag(n"AimingBoundAttacks") || stateContext.GetBoolParameter(n"isManualTriggerCtrlOverride", true) {
     isSecondary = stateContext.IsStateActive(n"UpperBody", n"aimingState");
+  };
+  if weaponObject.IsEquippedInLeftHand() && weaponObject.WeaponHasTag(n"ManualTriggerSwap") {
+    isSecondary = false;
   };
   
   if chargeReadyPercentage <= 0.0 {
@@ -279,13 +335,13 @@ protected final const func ToReload(stateContext: ref<StateContext>, scriptInter
 protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let lastShotTime: Double;
   let actionPressCount: Uint32 = scriptInterface.GetActionPressCount(n"RangedAttack");
-  let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(n"LastChargePressCount");
+  let lastChargePressCount: StateResultInt = stateContext.GetPermanentIntParameter(this.GetLastChargePressCount());
   if lastChargePressCount.valid && lastChargePressCount.value == Cast<Int32>(actionPressCount) {
     if !this.CanHoldToShoot(scriptInterface) {
       this.EnableOnEnterCondition(false);
       return false;
     };
-    lastShotTime = stateContext.GetDoubleParameter(n"LastShotTime", true);
+    lastShotTime = this.GetLastShotTime(stateContext);
     if EngineTime.ToDouble(GameInstance.GetSimTime(scriptInterface.GetGame())) < lastShotTime + 0.00d {
       return false;
     };
@@ -338,30 +394,12 @@ protected final func GetChargeValuePerSec(scriptInterface: ref<StateGameScriptIn
 // Extra
 
 // ProtectedAttackPackage
-@replaceMethod(OverrideRangedAttackPackageEffector)
-protected func ActionOn(owner: ref<GameObject>) -> Void {
-  let targetObject: wref<GameObject>;
-  let targetWeapon: ref<WeaponObject>;
-  if !this.GetApplicationTarget(owner, n"Weapon", targetObject) {
-    return;
+@wrapMethod(OverrideRangedAttackPackageEffector)
+private final func HasRequiredAttachmentMod(weaponObject: ref<WeaponObject>) -> Bool {
+  if weaponObject.WeaponHasTag(n"ProtectedAttackPackage") {
+   return false;
   };
-  targetWeapon = targetObject as WeaponObject;
-  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ProtectedAttackPackage") {
-    targetWeapon.OverrideRangedAttackPackage(this.m_attackPackage);
-  };
-}
-
-@replaceMethod(OverrideRangedAttackPackageEffector)
-protected func ActionOff(owner: ref<GameObject>) -> Void {
-  let targetObject: wref<GameObject>;
-  let targetWeapon: ref<WeaponObject>;
-  if !this.GetApplicationTarget(owner, n"Weapon", targetObject) {
-    return;
-  };
-  targetWeapon = targetObject as WeaponObject;
-  if IsDefined(targetWeapon) && !targetWeapon.WeaponHasTag(n"ProtectedAttackPackage") {
-    targetWeapon.DefaultRangedAttackPackage();
-  };
+  return wrappedMethod(weaponObject);
 }
 
 // free Bolt protection
@@ -369,8 +407,12 @@ protected func ActionOff(owner: ref<GameObject>) -> Void {
 protected final const func IsDischargePerfect(game: GameInstance, weaponObject: ref<WeaponObject>, opt state: ref<PerfectDischargePrereqState>) -> Bool {
   let result: Bool = wrappedMethod(game, weaponObject, state);
   if result {
-    if weaponObject.WeaponHasTagOnTrigger(n"ForceAuto") || weaponObject.WeaponHasTagOnTrigger(n"InstantCharge") {
-      return false;
+    let player: wref<GameObject> = GameInstance.GetPlayerSystem(game).GetLocalPlayerControlledGameObject();
+    if IsDefined(player) {
+      if ((weaponObject.WeaponHasTag(n"ForceAutoPrimary") || weaponObject.WeaponHasTag(n"InstantChargePrimary")) && !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger"))
+      || ((weaponObject.WeaponHasTag(n"ForceAutoSecondary") || weaponObject.WeaponHasTag(n"InstantChargeSecondary")) && StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.PlayerSecondaryTrigger")) {
+        return false;
+      };
     };
   };
   return result;
@@ -405,13 +447,25 @@ public final func Process(ctx: EffectScriptContext, applierCtx: EffectExecutionS
 public final static func IsChargeRangedWeapon(const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
   let result: Bool = wrappedMethod(scriptInterface);
   if result {
-    let weaponObject: ref<WeaponObject> = GameInstance.GetTransactionSystem(scriptInterface.owner.GetGame()).GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
-    if weaponObject.WeaponHasTagOnTrigger(n"InstantCharge") {
+    let weapon: ref<WeaponObject> = GameInstance.GetTransactionSystem(scriptInterface.owner.GetGame()).GetItemInSlot(scriptInterface.executionOwner, t"AttachmentSlots.WeaponRight") as WeaponObject;
+    if weapon.WeaponHasTagOnTrigger(n"InstantCharge") {
       return false;
     };
-    if Equals(scriptInterface.GetStatsSystem().GetStatValue(Cast<StatsObjectID>(weaponObject.GetEntityID()), gamedataStatType.ChargeTime), 0.00) {
+    if Equals(scriptInterface.GetStatsSystem().GetStatValue(Cast<StatsObjectID>(weapon.GetEntityID()), gamedataStatType.ChargeTime), 0.00) {
       return false;
     };
   };
   return result;
 }
+
+/*
+// Dual Wield prevention
+@wrapMethod(InventoryDataManagerV2)
+private final func GetInventoryItemDataInternal(owner: wref<GameObject>, itemData: wref<gameItemData>, opt itemRecord: wref<Item_Record>) -> InventoryItemData {
+  let data: InventoryItemData = wrappedMethod(owner, itemData, itemRecord);
+  if itemData.HasTag(n"ManualTriggerSwap") {
+    InventoryItemData.SetCanDualWield(data, false);
+  };
+  return data;
+}
+*/
